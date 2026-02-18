@@ -1,5 +1,12 @@
 package app.main.LibraryApp.domain;
 
-public class User {
+import java.time.LocalDate;
+import java.util.UUID;
 
+public class User {
+    UUID id;
+    String name;
+    String profileInfo;
+    LocalDate registrationDate;
+    Library library;
 }
