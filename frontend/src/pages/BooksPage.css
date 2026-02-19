@@ -1,0 +1,60 @@
+.books-empty {
+  color: #5b4a3b;
+  font-style: italic;
+  margin-top: 1rem;
+}
+
+.books-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.book-card {
+  background: #fbf6ed;
+  border: 1px solid #d8c7ad;
+  border-radius: 12px;
+  padding: 1.2rem;
+  box-shadow: 0 4px 14px rgba(52, 34, 24, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.book-title {
+  margin: 0;
+  color: #2a1f17;
+  font-size: 1.1rem;
+}
+
+.book-author {
+  margin: 0;
+  color: #5b4a3b;
+  font-size: 0.9rem;
+}
+
+.book-year {
+  margin: 0;
+  color: #8a7562;
+  font-size: 0.85rem;
+}
+
+.book-delete {
+  margin-top: auto;
+  padding: 0.4rem 0.6rem;
+  background: transparent;
+  color: #a63232;
+  border: 1px solid #d4a0a0;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: 0.2s ease;
+  align-self: flex-start;
+}
+
+.book-delete:hover {
+  background: #a63232;
+  color: #fff;
+  border-color: #a63232;
+}

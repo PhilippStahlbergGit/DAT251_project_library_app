@@ -1,0 +1,78 @@
+.add-book-card {
+  background: #fbf6ed;
+  border: 1px solid #d8c7ad;
+  border-radius: 12px;
+  padding: 1.5rem;
+  margin: 1.5rem 0;
+  box-shadow: 0 6px 20px rgba(52, 34, 24, 0.08);
+}
+
+.add-book-card h2 {
+  margin: 0 0 1rem;
+  color: #2a1f17;
+}
+
+.add-book-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.add-book-form label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5b4a3b;
+}
+
+.add-book-form input {
+  padding: 0.6rem 0.75rem;
+  border: 1px solid #cbb89a;
+  border-radius: 8px;
+  background: #fffaf2;
+  font-size: 0.95rem;
+  color: #2f241b;
+  outline: none;
+  transition: border-color 0.2s;
+}
+
+.add-book-form input:focus {
+  border-color: #8a5a3b;
+}
+
+.add-book-btn {
+  margin-top: 0.6rem;
+  padding: 0.65rem;
+  background: #6d4630;
+  color: #f6ead5;
+  border: none;
+  border-radius: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.add-book-btn:hover {
+  background: #5a3a29;
+}
+
+.add-book-error {
+  color: #a63232;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+.added-books {
+  margin-top: 1.5rem;
+}
+
+.added-books ul {
+  list-style: none;
+  padding: 0;
+}
+
+.added-books li {
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #d8c7ad;
+  color: #2f241b;
+}
