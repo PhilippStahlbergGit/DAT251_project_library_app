@@ -6,10 +6,10 @@ import app.main.LibraryApp.domain.enums.AvailabilityStatus;
 import app.main.LibraryApp.domain.enums.Condition;
 
 public class BookCopy {
-    UUID id;
-    Book book;
-    AvailabilityStatus availabilityStatus;
-    Condition condition;
-    int rating;
-    String location;
+    private UUID id;
+    private Book book;
+    private AvailabilityStatus availabilityStatus;
+    private Condition condition;
+    private int rating;
+    private String location;
 }

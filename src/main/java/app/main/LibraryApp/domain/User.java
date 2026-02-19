@@ -4,9 +4,10 @@ import java.time.LocalDate;
 import java.util.UUID;
 
 public class User {
-    UUID id;
-    String name;
-    String profileInfo;
-    LocalDate registrationDate;
-    Library library;
+    private UUID id;
+    private String name;
+    private String profileInfo;
+    private LocalDate registrationDate;
+    private Library library;
+
 }
