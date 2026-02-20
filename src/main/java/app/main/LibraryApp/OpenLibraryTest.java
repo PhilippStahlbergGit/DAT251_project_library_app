@@ -14,12 +14,13 @@ public class OpenLibraryTest {
     public static void main(String[] args) throws Exception {
         HttpClient client = HttpClient.newHttpClient();
 
-        String query = URLEncoder.encode("harry potte", StandardCharsets.UTF_8);
+        String query = URLEncoder.encode("harry potter", StandardCharsets.UTF_8);
 
         // 'nor' is the Open Library language code for Norwegian
         String url = "https://openlibrary.org/search.json"
                 + "?q=" + query
                 + "&language=eng"
+                + "&sort" // The default is to sort by relevance
                 + "&fields=title,author_name,language,isbn,first_publish_year";
 
         HttpRequest request = HttpRequest.newBuilder()
