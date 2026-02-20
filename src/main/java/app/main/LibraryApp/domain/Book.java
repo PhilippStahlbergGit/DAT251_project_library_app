@@ -1,5 +1,14 @@
 package app.main.LibraryApp.domain;
 
-public class Book {
+import java.util.List;
 
+import app.main.LibraryApp.domain.enums.Genre;
+
+public class Book {
+    private String isbn;
+    private String title;
+    private List<String> authors;
+    private String publisher;
+    private Integer publicationYear;
+    private Genre genre;
 }

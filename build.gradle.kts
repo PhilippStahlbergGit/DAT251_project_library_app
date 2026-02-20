@@ -2,6 +2,7 @@ plugins {
 	java
 	id("org.springframework.boot") version "4.0.2"
 	id("io.spring.dependency-management") version "1.1.7"
+	id("io.freefair.lombok") version "9.2.0"
 }
 
 group = "app.main"
