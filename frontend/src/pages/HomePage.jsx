@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Link } from "react-router-dom";
 import { useBooks } from "../context/BookContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
+import { useJoke } from "../context/JokeContext.jsx";
+import { useEffect } from "react";
 import "./HomePage.css";
 
 export default function HomePage() {
@@ -9,6 +11,13 @@ export default function HomePage() {
   const { isAuthenticated } = useAuth();
   const [form, setForm] = useState({ title: "", author: "", year: "" });
   const [error, setError] = useState("");
+
+  //Joke API
+  const { joke, loadingJoke, jokeError, fetchJoke } = useJoke();
+
+    useEffect(() => {
+    fetchJoke();
+  }, [fetchJoke]);
 
   const onChange = (e) =>
     setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
@@ -67,6 +76,14 @@ export default function HomePage() {
       )}
 
       <p><Link to="/books">View all books →</Link></p>
+      <section>
+        <h2>Random Chuck Norris Joke</h2>
+        {loadingJoke && <p>Loading joke...</p>}
+        {jokeError && <p>{jokeError}</p>}
+        {!loadingJoke && !jokeError && <p>{joke}</p>}
+        <button onClick={fetchJoke}>Get another joke</button>
+      </section>
     </section>
+    
   );
 }
