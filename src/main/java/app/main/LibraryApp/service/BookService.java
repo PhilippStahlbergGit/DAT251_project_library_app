@@ -1,5 +1,6 @@
 package app.main.LibraryApp.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import app.main.LibraryApp.domain.Book;
@@ -8,19 +9,23 @@ import org.springframework.stereotype.Service;
 @Service
 public class BookService {
 
+    List<Book> books;
+
+    public BookService() {
+        this.books = new ArrayList<>();
+    }
+
     public Book addBook(Book book) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'addBook'");
+        this.books.add(book);
+        return book;
     }
 
     public List<Book> getAllBooks() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getAllBooks'");
+        return this.books;
     }
 
     public boolean deleteBook(Book book) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'deleteBook'");
+        return this.books.remove(book);
     }
 
 }
