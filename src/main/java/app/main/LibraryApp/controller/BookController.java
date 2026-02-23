@@ -11,33 +11,33 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import app.main.LibraryApp.domain.Book;
-import app.main.LibraryApp.manager.LibraryManager;
+import app.main.LibraryApp.service.BookService;
 
 @RestController
 @RequestMapping("api/books")
 public class BookController {
 
-    private final LibraryManager libraryManager;
+    private final BookService bookService;
 
-    public BookController(LibraryManager libraryManager) {
-        this.libraryManager = libraryManager;
+    public BookController(BookService bookService) {
+        this.bookService = bookService;
     }
 
     @PostMapping
     public ResponseEntity<Book> addBook(@RequestBody Book book) {
-        Book addedBook = libraryManager.addBook(book);
+        Book addedBook = bookService.addBook(book);
         return ResponseEntity.ok(addedBook);
     }
 
     @GetMapping
     public ResponseEntity<List<Book>> getAllBooks() {
-        List<Book> books = libraryManager.getAllBooks();
+        List<Book> books = bookService.getAllBooks();
         return ResponseEntity.ok(books);
     }
 
     @DeleteMapping
     public ResponseEntity<String> deleteBook(@RequestBody Book book) {
-        if (libraryManager.deleteBook(book)) {
+        if (bookService.deleteBook(book)) {
             return ResponseEntity.ok("Book deleted");
         } else {
             return ResponseEntity.status(404).body("Book not found");
