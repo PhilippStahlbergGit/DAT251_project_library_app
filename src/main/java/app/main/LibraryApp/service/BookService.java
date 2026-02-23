@@ -1,10 +1,10 @@
-package app.main.LibraryApp.manager;
+package app.main.LibraryApp.service;
 
 import java.util.List;
 
 import app.main.LibraryApp.domain.Book;
 
-public class LibraryManager {
+public class BookService {
 
     public Book addBook(Book book) {
         // TODO Auto-generated method stub
