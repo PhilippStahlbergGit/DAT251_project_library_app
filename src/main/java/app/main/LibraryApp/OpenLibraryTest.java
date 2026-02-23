@@ -16,7 +16,7 @@ public class OpenLibraryTest {
 
         String query = URLEncoder.encode("harry potter", StandardCharsets.UTF_8);
 
-        // 'nor' is the Open Library language code for Norwegian
+        // 'eng' is the Open Library language code for English
         String url = "https://openlibrary.org/search.json"
                 + "?q=" + query
                 + "&language=eng"

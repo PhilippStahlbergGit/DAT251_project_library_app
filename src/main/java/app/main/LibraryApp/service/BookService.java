@@ -3,7 +3,9 @@ package app.main.LibraryApp.service;
 import java.util.List;
 
 import app.main.LibraryApp.domain.Book;
+import org.springframework.stereotype.Service;
 
+@Service
 public class BookService {
 
     public Book addBook(Book book) {

@@ -14,7 +14,7 @@ import app.main.LibraryApp.domain.Book;
 import app.main.LibraryApp.service.BookService;
 
 @RestController
-@RequestMapping("api/books")
+@RequestMapping("/api/books")
 public class BookController {
 
     private final BookService bookService;

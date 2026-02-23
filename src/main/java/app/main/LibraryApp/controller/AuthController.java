@@ -14,17 +14,17 @@ import app.main.LibraryApp.service.AuthService;
 @RequestMapping("/api/auth")
 public class AuthController {
 
-    AuthService authservice;
+    private final AuthService authService;
 
     public AuthController(AuthService authservice) {
-        this.authservice = authservice;
+        this.authService = authservice;
     }
 
     // POST /api/auth/register
     @PostMapping("/register")
     public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
         // handle registration logic
-        authservice.register(request);
+        authService.register(request);
         return ResponseEntity.ok("User registered");
     }
 
