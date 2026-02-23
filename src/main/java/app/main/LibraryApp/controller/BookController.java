@@ -25,7 +25,6 @@ public class BookController {
 
     @PostMapping
     public ResponseEntity<Book> addBook(@RequestBody Book book) {
-        // TODO Implement logic to add a new book using libraryManager
         Book addedBook = libraryManager.addBook(book);
         return ResponseEntity.ok(addedBook);
     }
