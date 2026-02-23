@@ -36,5 +36,10 @@ out/
 ### VS Code ###
 .vscode/
 
+# Python env
+.venv/
+
+# python cache
+__pycache__/
 
 /frontend/node_modules
