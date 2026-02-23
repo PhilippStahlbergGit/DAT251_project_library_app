@@ -31,7 +31,7 @@ public class BookController {
         Book newBook = new Book();
         newBook.setTitle(book.getTitle());
         newBook.setAuthors(List.of(book.getAuthor()));
-        newBook.setPublicationYear(Integer.parseInt(book.getYear()));
+        newBook.setPublicationYear((book.getYear()));
 
         Book addedBook = bookService.addBook(newBook);
         return ResponseEntity.ok(addedBook);

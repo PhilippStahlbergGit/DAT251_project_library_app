@@ -46,3 +46,6 @@ __pycache__/
 
 # gradle properties
 gradle.properties
+
+# http
+*.http
