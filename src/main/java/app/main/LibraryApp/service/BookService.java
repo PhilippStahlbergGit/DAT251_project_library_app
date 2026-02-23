@@ -1,6 +1,7 @@
 package app.main.LibraryApp.service;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 import app.main.LibraryApp.domain.Book;
@@ -20,12 +21,12 @@ public class BookService {
         return book;
     }
 
-    public List<Book> getAllBooks() {
+    public Collection<Book> getAllBooks() {
         return this.books;
     }
 
-    public boolean deleteBook(Book book) {
-        return this.books.remove(book);
+    public boolean deleteBook(Long id) {
+        return this.books.remove(id);
     }
 
 }

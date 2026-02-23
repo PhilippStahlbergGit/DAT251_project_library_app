@@ -3,7 +3,9 @@ package app.main.LibraryApp.domain;
 import java.util.List;
 
 import app.main.LibraryApp.domain.enums.Genre;
+import lombok.Data;
 
+@Data
 public class Book {
     private String isbn;
     private String title;
