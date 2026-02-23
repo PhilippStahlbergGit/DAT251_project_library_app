@@ -14,7 +14,7 @@ import app.main.LibraryApp.domain.Book;
 import app.main.LibraryApp.manager.LibraryManager;
 
 @RestController
-@RequestMapping("/books")
+@RequestMapping("api/books")
 public class BookController {
 
     private final LibraryManager libraryManager;
