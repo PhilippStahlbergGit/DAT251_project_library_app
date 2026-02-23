@@ -43,3 +43,9 @@ out/
 __pycache__/
 
 /frontend/node_modules
+
+# gradle properties
+gradle.properties
+
+# http
+*.http
