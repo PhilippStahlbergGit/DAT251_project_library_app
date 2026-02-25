@@ -30,8 +30,13 @@ public class LoanController {
     }
 
     @PostMapping
-    public ResponseEntity<Loan> createLoan(@RequestBody LoanRequest loan) {
-        return ResponseEntity.ok(null); // Placeholder for actual implementation
+    public ResponseEntity<Loan> createLoan(@RequestBody LoanRequest loanRequest) {
+
+        loanService.createLoan(loanRequest.getBookCopy(), loanRequest.getStrBorrower());
+        
+        Loan loan = loanService.createLoan(loanRequest.getBookCopy(), loanRequest.getStrBorrower());
+        
+        return ResponseEntity.ok(loan); 
     }
 
     @GetMapping
