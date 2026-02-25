@@ -11,4 +11,9 @@ public class AuthService {
         throw new UnsupportedOperationException("Unimplemented method 'register'");
     }
 
+    public void logout() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'logout'");
+    }
+
 }

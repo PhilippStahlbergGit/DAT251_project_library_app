@@ -39,10 +39,10 @@ public class OpenLibraryTest {
         JsonNode docs = root.get("docs");
 
         for (JsonNode book : docs) {
-            String title = book.path("title").asText();
+            String title = book.path("title").asString();
             if (title.isEmpty())
                 title = "N/A";
-            String author = book.path("author_name").path(0).asText();
+            String author = book.path("author_name").path(0).asString();
             if (author.isEmpty())
                 author = "N/A";
             int year = book.path("first_publish_year").asInt();
