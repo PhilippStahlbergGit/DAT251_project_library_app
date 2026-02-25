@@ -1,0 +1,48 @@
+package app.main.LibraryApp.controller;
+
+
+import java.util.Collection;
+import java.util.List;
+
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
+
+import app.main.LibraryApp.domain.Loan;
+import app.main.LibraryApp.domain.dto.LoanRequest;
+import app.main.LibraryApp.service.LoanService;
+
+
+
+@RestController
+@RequestMapping("/api/loan")
+public class LoanController {
+
+    private final LoanService loanService;
+
+    public LoanController(LoanService loanService) {
+        this.loanService = loanService;
+    }
+
+    @PostMapping
+    public ResponseEntity<Loan> createLoan(@RequestBody LoanRequest loan) {
+        return ResponseEntity.ok(null); // Placeholder for actual implementation
+    }
+
+    @GetMapping
+    public ResponseEntity<Collection<Loan>> getAllLoans() {
+        
+        return ResponseEntity.ok(null);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity<String> deleteLoan(@PathVariable Long id) {
+        return ResponseEntity.ok("Not implemented yet");
+    }
+
+}
