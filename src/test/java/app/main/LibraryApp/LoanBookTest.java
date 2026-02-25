@@ -20,13 +20,11 @@ class LoanBookTest {
         bookCopy.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);   
         
         LoanService loanService = new LoanService();
-        Loan loan = loanService.createLoan(1L, "John Doe");
+        Loan loan = loanService.createLoan("John Doe", "The Great Gatsby");
 
 
         assertEquals("John Doe", loan.getBorrowerName());
-        
-        
+        assertEquals("The Great Gatsby", loan.getBookTitle());
         assertEquals(LoanStatus.ACTIVE, loan.getLoanStatus());
-        assertEquals(AvailabilityStatus.LOANED, bookCopy.getAvailabilityStatus());
     }
 }

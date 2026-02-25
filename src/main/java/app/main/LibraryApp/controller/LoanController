@@ -44,7 +44,6 @@ public class LoanController {
 
     @GetMapping
     public ResponseEntity<Collection<Loan>> getAllLoans() {
-        
         return ResponseEntity.ok(loanService.getAllLoans());
     }
 

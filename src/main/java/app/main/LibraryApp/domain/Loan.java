@@ -19,6 +19,7 @@ public class Loan {
     //private User borrower;
     private String loanComment;
     private String borrowerName;
+    private String bookTitle;
    
     private LocalDate loanDate;
     private LocalDate dueDate;
