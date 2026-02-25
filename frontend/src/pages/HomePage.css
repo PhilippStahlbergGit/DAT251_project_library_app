@@ -76,3 +76,55 @@
   border-bottom: 1px solid #d8c7ad;
   color: #2f241b;
 }
+.recommendations-section {
+  margin: 1rem 0;
+  padding: 1rem;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  background: #fafafa;
+}
+
+.recommendations-list {
+  margin: 0.5rem 0 0;
+  padding-left: 1.25rem;
+}
+/* ...existing code... */
+
+.reco-marquee {
+  overflow: hidden;
+  width: 100%;
+  position: relative;
+  padding: 0.25rem 0;
+}
+
+.reco-track {
+  display: flex;
+  gap: 12px;
+  width: max-content;
+  animation: reco-scroll 28s linear infinite;
+}
+
+.reco-card {
+  min-width: 220px;
+  max-width: 220px;
+  padding: 0.75rem;
+  border: 1px solid #e3d5bf;
+  border-radius: 10px;
+  background: #fbf6ed;
+  flex: 0 0 auto;
+}
+
+@keyframes reco-scroll {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); } /* because list is duplicated */
+}
+
+.reco-marquee:hover .reco-track {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .reco-track {
+    animation: none;
+  }
+}

@@ -22,7 +22,7 @@ public class AuthController {
 
     // POST /api/auth/register
     @PostMapping("/register")
-    public ResponseEntity<?> register(@RequestBody RegisterRequest request) {
+    public ResponseEntity<String> register(@RequestBody RegisterRequest request) {
         // handle registration logic
         authService.register(request);
         return ResponseEntity.ok("User registered");
@@ -30,15 +30,17 @@ public class AuthController {
 
     // POST /api/auth/login
     @PostMapping("/login")
-    public ResponseEntity<?> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<String> login(@RequestBody LoginRequest request) {
         // handle login, return token or session
+        authService.login(request);
         return ResponseEntity.ok("User logged in");
     }
 
     // POST /api/auth/logout
     @PostMapping("/logout")
-    public ResponseEntity<?> logout() {
+    public ResponseEntity<String> logout() {
         // handle logout, invalidate token or session
+        authService.logout();
         return ResponseEntity.ok("User logged out");
     }
 }
