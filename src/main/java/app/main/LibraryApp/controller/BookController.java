@@ -28,12 +28,7 @@ public class BookController {
 
     @PostMapping
     public ResponseEntity<Book> addBook(@RequestBody BookRequest book) {
-        Book newBook = new Book();
-        newBook.setTitle(book.getTitle());
-        newBook.setAuthors(List.of(book.getAuthor()));
-        newBook.setPublicationYear((book.getYear()));
-
-        Book addedBook = bookService.addBook(newBook);
+        Book addedBook = bookService.addBook(book);
         return ResponseEntity.ok(addedBook);
     }
 
