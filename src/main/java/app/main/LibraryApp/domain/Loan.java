@@ -13,16 +13,19 @@ public class Loan {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-    private BookCopy bookCopy;
+    private long bookCopyId;
+   
     //private User lender;
     //private User borrower;
+    private String loanComment;
+    private String borrowerName;
+   
     private LocalDate loanDate;
     private LocalDate dueDate;
     private LocalDate returnDate;
     private LoanStatus loanStatus;
 
-    private String loanComment;
-    private String strBorrower;
+    
         
   
     

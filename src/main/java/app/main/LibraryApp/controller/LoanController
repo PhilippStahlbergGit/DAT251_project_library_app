@@ -32,9 +32,14 @@ public class LoanController {
     @PostMapping
     public ResponseEntity<Loan> createLoan(@RequestBody LoanRequest loanRequest) {
 
-        Loan newLoan = loanService.createLoan(loanRequest.getBookCopy(), loanRequest.getStrBorrower());
+        Loan newLoan = loanService.createLoan(loanRequest.getBookCopyId(), loanRequest.getBorrowerName());
         
         return ResponseEntity.ok(newLoan); 
+    }
+
+    @PutMapping("/delete/{id}")
+    public ResponseEntity<Loan> deleteLoan(@PathVariable Long id) {
+        return ResponseEntity.ok(loanService.deleteLoan(id));
     }
 
     @GetMapping

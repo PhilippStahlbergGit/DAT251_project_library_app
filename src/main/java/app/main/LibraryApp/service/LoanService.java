@@ -20,8 +20,11 @@ public class LoanService {
         this.loans = new ArrayList<>();
     }
 
-    public Loan createLoan(BookCopy bookCopy, String strBorrower) {
+    public Loan createLoan(Long bookCopyId, String borrowerName) {
         
+        BookCopy bookCopy = findBookCopyById(bookCopyId);
+
+
        if(bookCopy.getAvailabilityStatus() == AvailabilityStatus.AVAILABLE) {
             bookCopy.setAvailabilityStatus(AvailabilityStatus.LOANED);
         } else {
@@ -29,23 +32,29 @@ public class LoanService {
         }
 
         Loan loan = new Loan();
-        
-        loan.setBookCopy(bookCopy);
+        loan.setBookCopyId(bookCopyId);
         loan.setLoanStatus(LoanStatus.ACTIVE);
-        loan.setStrBorrower(strBorrower);
-        loan.setLoanComment("The book " + bookCopy.getBook().getTitle() + " was loaned to " + strBorrower);
+        loan.setBorrowerName(borrowerName);
+        loan.setLoanComment("The book " + bookCopy.getBook().getTitle() + " was loaned to " + borrowerName);
         
         this.loans.add(loan);
         return loan;
     }
 
-    public void deleteLoan(Long id) {
-        Loan loanToRemove = this.loans.stream()
-            .filter(loan -> loan.getId().equals(id))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("Loan with id " + id + " not found."));
+    private BookCopy findBookCopyById(Long bookCopyId) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'findBookCopyById'");
+    }
 
-        loanToRemove.getBookCopy().setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
+    public void deleteLoan(Long loanID) {
+        Loan loanToRemove = this.loans.stream()
+            .filter(loan -> loan.getId().equals(loanID))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Loan with id " + loanID + " not found."));
+
+        BookCopy bookCopy = findBookCopyById(loanToRemove.getBookCopyId());
+        
+        bookCopy.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
         loanToRemove.setLoanStatus(LoanStatus.RETURNED);
 
     }

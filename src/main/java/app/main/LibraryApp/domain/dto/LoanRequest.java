@@ -6,7 +6,7 @@ import lombok.Data;
 @Data
 public class LoanRequest {
     
-    private BookCopy bookCopy;
+    private Long bookCopyId;
     private String loanComment;
-    private String strBorrower;
+    private String borrowerName;
 }
