@@ -7,6 +7,8 @@ import org.springframework.stereotype.Service;
 
 import app.main.LibraryApp.domain.BookCopy;
 import app.main.LibraryApp.domain.Loan;
+import app.main.LibraryApp.domain.enums.AvailabilityStatus;
+import app.main.LibraryApp.domain.enums.LoanStatus;
 
 @Service
 public class LoanService {
@@ -20,8 +22,16 @@ public class LoanService {
 
     public Loan createLoan(BookCopy bookCopy, String strBorrower) {
         
-       
+       if(bookCopy.getAvailabilityStatus() == AvailabilityStatus.AVAILABLE) {
+            bookCopy.setAvailabilityStatus(AvailabilityStatus.LOANED);
+        } else {
+            throw new IllegalStateException("Book copy is not available for loan.");
+        }
+
         Loan loan = new Loan();
+        
+        loan.setBookCopy(bookCopy);
+        loan.setLoanStatus(LoanStatus.ACTIVE);
         loan.setStrBorrower(strBorrower);
         loan.setLoanComment("The book " + bookCopy + " was loaned to " + strBorrower);
         
