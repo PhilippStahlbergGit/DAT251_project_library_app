@@ -32,17 +32,15 @@ public class LoanController {
     @PostMapping
     public ResponseEntity<Loan> createLoan(@RequestBody LoanRequest loanRequest) {
 
-        loanService.createLoan(loanRequest.getBookCopy(), loanRequest.getStrBorrower());
+        Loan newLoan = loanService.createLoan(loanRequest.getBookCopy(), loanRequest.getStrBorrower());
         
-        Loan loan = loanService.createLoan(loanRequest.getBookCopy(), loanRequest.getStrBorrower());
-        
-        return ResponseEntity.ok(loan); 
+        return ResponseEntity.ok(newLoan); 
     }
 
     @GetMapping
     public ResponseEntity<Collection<Loan>> getAllLoans() {
         
-        return ResponseEntity.ok(null);
+        return ResponseEntity.ok(loanService.getAllLoans());
     }
 
     @DeleteMapping("/{id}")
