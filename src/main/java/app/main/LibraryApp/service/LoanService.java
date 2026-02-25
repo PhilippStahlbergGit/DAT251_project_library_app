@@ -33,14 +33,21 @@ public class LoanService {
         loan.setBookCopy(bookCopy);
         loan.setLoanStatus(LoanStatus.ACTIVE);
         loan.setStrBorrower(strBorrower);
-        loan.setLoanComment("The book " + bookCopy + " was loaned to " + strBorrower);
+        loan.setLoanComment("The book " + bookCopy.getBook().getTitle() + " was loaned to " + strBorrower);
         
         this.loans.add(loan);
         return loan;
     }
 
     public void deleteLoan(Long id) {
-        this.loans.removeIf(loan -> loan.getId().equals(id));
+        Loan loanToRemove = this.loans.stream()
+            .filter(loan -> loan.getId().equals(id))
+            .findFirst()
+            .orElseThrow(() -> new IllegalArgumentException("Loan with id " + id + " not found."));
+
+        loanToRemove.getBookCopy().setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
+        loanToRemove.setLoanStatus(LoanStatus.RETURNED);
+
     }
 
     public List<Loan> getAllLoans() {
