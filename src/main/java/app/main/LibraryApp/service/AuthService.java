@@ -8,18 +8,15 @@ import org.springframework.stereotype.Service;
 public class AuthService {
 
     public void register(RegisterRequest request) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'register'");
+        System.out.println("Registering user: " + request.getUsername() + ", " + request.getEmail());
     }
 
     public void logout() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'logout'");
+        System.out.println("Logging out user");
     }
 
     public void login(LoginRequest request) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'login'");
+        System.out.println("Logging in user: " + request.getEmail());
     }
 
 }
