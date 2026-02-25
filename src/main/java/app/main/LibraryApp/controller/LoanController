@@ -47,9 +47,4 @@ public class LoanController {
         return ResponseEntity.ok(loanService.getAllLoans());
     }
 
-    @DeleteMapping("/{id}")
-    public ResponseEntity<String> deleteLoan(@PathVariable Long id) {
-        return ResponseEntity.ok("Not implemented yet");
-    }
-
 }
