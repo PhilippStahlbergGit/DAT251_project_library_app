@@ -27,12 +27,8 @@ public class UserController {
 
     @PostMapping
     public ResponseEntity<User> addUser(@RequestBody UserRequest user) {
-        User newUser = new User();
-        newUser.setName(user.getName());
-        newUser.setEmail(user.getEmail());
-        newUser.setPassword(user.getPassword());
 
-        User addedUser = userService.addUser(newUser);
+        User addedUser = userService.addUser(user);
         return ResponseEntity.ok(addedUser);
     }
 
@@ -50,7 +46,4 @@ public class UserController {
             return ResponseEntity.status(404).body("User not found");
         }
     }
-
-
-
 }
