@@ -1,20 +1,20 @@
 package app.main.LibraryApp.service;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
 import app.main.LibraryApp.domain.User;
 import app.main.LibraryApp.domain.dto.UserRequest;
+import app.main.LibraryApp.repository.UserRepository;
 
 @Service
 public class UserService {
 
-    List<User> users;
+    private final UserRepository userRepository;
 
-    public UserService(List<User> users) {
-        this.users = new ArrayList<>(users);
+    public UserService(UserRepository userRepository) {
+        this.userRepository = userRepository;
     }
 
     public User addUser(UserRequest user) {
@@ -22,16 +22,19 @@ public class UserService {
         newUser.setName(user.getName());
         newUser.setEmail(user.getEmail());
         newUser.setPassword(user.getPassword());
-        this.users.add(newUser);
-        return newUser;
+        return userRepository.save(newUser);
     }
 
     public List<User> getAllUsers() {
-        return this.users;
+        return userRepository.findAll();
     }
 
     public boolean deleteUser(Long id) {
-        return this.users.removeIf(user -> user.getId().equals(id));
+        if (userRepository.existsById(id)) {
+            userRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
 }
