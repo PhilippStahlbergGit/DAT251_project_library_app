@@ -1,32 +1,35 @@
 package app.main.LibraryApp.service;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import app.main.LibraryApp.domain.Book;
+import app.main.LibraryApp.repository.BookRepository;
+
 import org.springframework.stereotype.Service;
 
 @Service
 public class BookService {
 
-    List<Book> books;
+    private final BookRepository bookRepository;
 
-    public BookService() {
-        this.books = new ArrayList<>();
+    public BookService(BookRepository bookRepository) {
+        this.bookRepository = bookRepository;
     }
 
     public Book addBook(Book book) {
-        this.books.add(book);
-        return book;
+        return bookRepository.save(book);
     }
 
-    public Collection<Book> getAllBooks() {
-        return this.books;
+    public List<Book> getAllBooks() {
+        return bookRepository.findAll();
     }
 
     public boolean deleteBook(Long id) {
-        return this.books.removeIf(book -> book.getId().equals(id));
+        if (bookRepository.existsById(id)) {
+            bookRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
 }
