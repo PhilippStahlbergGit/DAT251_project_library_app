@@ -9,38 +9,31 @@ export function AuthProvider({ children }) {
   });
 
   const register = async ({ name, email, password }) => {
-    // TODO: replace mock with API call
-    // const res = await fetch("/api/auth/register", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ name, email, password }),
-    // });
-    // if (!res.ok) throw new Error(await res.text());
+     const res = await fetch("/api/auth/register", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({ name, email, password }),
+     });
+     if (!res.ok) throw new Error(await res.text());
 
-    console.log("MOCK register:", { name, email, password });
   };
 
   const login = async ({ email, password }) => {
-    // TODO: replace mock with API call
-    // const res = await fetch("/api/auth/login", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ email, password }),
-    // });
-    // if (!res.ok) throw new Error(await res.text());
-    // const data = await res.json();
-    // const loggedIn = data.user;
-
-    const loggedIn = { name: "Test User", email };
-    console.log("MOCK login:", loggedIn);
+    const res = await fetch("/api/auth/login", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({ email, password }),
+     });
+     if (!res.ok) throw new Error(await res.text());
+     const data = await res.json();
+     const loggedIn = data.user;
 
     setUser(loggedIn);
     localStorage.setItem("library_user", JSON.stringify(loggedIn));
   };
 
   const logout = async () => {
-    // TODO: replace mock with API call
-    // await fetch("/api/auth/logout", { method: "POST" });
+     await fetch("/api/auth/logout", { method: "POST" });
 
     setUser(null);
     localStorage.removeItem("library_user");
