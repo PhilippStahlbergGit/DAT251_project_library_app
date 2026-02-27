@@ -1,19 +1,32 @@
 
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 
 from pydantic import BaseModel
-from typing import List, Optional, Dict
+from typing import List
 
-from Recommandation import make_recommendations
+from models import Book
+
+from Recommandation import make_recommendations, getData
 
 app = FastAPI()
 
 class RecommendRequest(BaseModel):
-    owned_book_ids: List[int]
+    owned_books: List[Book] | Book
     k: int = 10
-    filters: Optional[Dict] = None
-
 
 @app.post("/recommend")
 def recommend(req: RecommendRequest):
-    return {"recommendations": make_recommendations(req.owned_book_ids, req.k, req.filters)}
+    try:
+        return {"recommendations": make_recommendations(req.owned_books, req.k)}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+
+
+@app.get("/data")
+def getDataEndpoint():
+    # for testing purposes!
+    try:
+        df = getData()
+        return {"data": df.to_dict(orient="records")}
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
