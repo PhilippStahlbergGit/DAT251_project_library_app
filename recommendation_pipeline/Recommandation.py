@@ -7,7 +7,10 @@ try:
 except ImportError:
     from models import Book
 
-from Recommendation_system import recommend_from_books, df, authorid_to_name
+try:
+    from .Recommendation_system import ensure_recommender, recommend_from_books
+except ImportError:
+    from Recommendation_system import ensure_recommender, recommend_from_books
 import kagglehub
 import pandas as pd
 import json
@@ -15,8 +18,8 @@ import csv
 import io
 import zipfile
 
-from typing import Union
 from functools import lru_cache
+import re
 
 
 import os
@@ -25,6 +28,55 @@ from pathlib import Path
 class Recommandation(BaseModel):
     book: Book
     score: float
+
+
+def _normalize_text(value: str | None) -> str:
+    if not value:
+        return ""
+    normalized = re.sub(r"[^a-z0-9]+", " ", str(value).casefold())
+    return " ".join(normalized.split())
+
+
+def _match_owned_book_row(catalog_df: pd.DataFrame, owned_book: Book) -> pd.DataFrame:
+    title_raw = (owned_book.title or "").strip()
+    if not title_raw:
+        return catalog_df.iloc[0:0]
+
+    title_series = catalog_df["Name"].astype(str)
+
+    # 1) Exact (case-sensitive), fast path.
+    exact = catalog_df[title_series == title_raw]
+    if not exact.empty:
+        return exact.iloc[[0]]
+
+    # 2) Exact (case-insensitive).
+    title_casefold = title_raw.casefold()
+    exact_ci = catalog_df[title_series.str.casefold() == title_casefold]
+    if not exact_ci.empty:
+        return exact_ci.iloc[[0]]
+
+    # 3) Normalized exact (remove punctuation, collapse spaces, casefold).
+    normalized_catalog_titles = title_series.map(_normalize_text)
+    normalized_title = _normalize_text(title_raw)
+    normalized_exact = catalog_df[normalized_catalog_titles == normalized_title]
+    if not normalized_exact.empty:
+        return normalized_exact.iloc[[0]]
+
+    # 4) Substring fallback for cases like missing subtitle/suffix in input title.
+    if normalized_title:
+        contains = catalog_df[
+            normalized_catalog_titles.str.contains(re.escape(normalized_title), na=False)
+        ]
+        if not contains.empty:
+            # Optional lightweight author preference.
+            if owned_book.authors:
+                wanted_authors = {_normalize_text(a) for a in owned_book.authors if a}
+                contains_authors = contains[contains["Authors"].astype(str).map(_normalize_text).isin(wanted_authors)]
+                if not contains_authors.empty:
+                    return contains_authors.iloc[[0]]
+            return contains.iloc[[0]]
+
+    return catalog_df.iloc[0:0]
 
 
 def _load_local_env_file() -> None:
@@ -225,10 +277,12 @@ def make_recommendations(owned_books: List[Book] | Book, k: int, df: pd.DataFram
     if not owned_books:
         return []
 
+    catalog_df = ensure_recommender(df)
+
     # Convert Book models into single-row DataFrames
     book_dfs = []
     for book in owned_books:
-        match = df[df["Name"] == book.title]
+        match = _match_owned_book_row(catalog_df, book)
         if match.empty:
             continue
         book_dfs.append(match.iloc[[0]])
