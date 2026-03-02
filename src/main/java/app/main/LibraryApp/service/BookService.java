@@ -8,14 +8,18 @@ import app.main.LibraryApp.domain.Book;
 import app.main.LibraryApp.domain.dto.BookRequest;
 
 import org.springframework.stereotype.Service;
+import app.main.LibraryApp.API.BookSearch;
 
 @Service
 public class BookService {
 
     List<Book> books;
+    private final BookSearch bookSearch;
 
-    public BookService() {
+
+    public BookService(BookSearch bookSearch) {
         this.books = new ArrayList<>();
+        this.bookSearch = bookSearch;
     }
 
     public Book addBook(BookRequest book) {
@@ -23,6 +27,7 @@ public class BookService {
         newBook.setTitle(book.getTitle());
         newBook.setAuthors(List.of(book.getAuthor()));
         newBook.setPublicationYear((book.getYear()));
+        newBook = bookSearch.completeBookInfo(newBook);
         this.books.add(newBook);
         return newBook;
     }
