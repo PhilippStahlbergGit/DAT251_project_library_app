@@ -60,8 +60,14 @@ def ensure_recommender(source_df: pd.DataFrame) -> pd.DataFrame:
 
     tfidf = TfidfVectorizer(stop_words="english", max_features=5000, ngram_range=(1, 2), min_df=2)
     X_title_sparse = tfidf.fit_transform(catalog_df["Name"])
-    svd = TruncatedSVD(n_components=256, random_state=42)
-    X_title = svd.fit_transform(X_title_sparse).astype(np.float32) * TITLE_WEIGHT
+    if X_title_sparse.shape[1] < 2 or min(X_title_sparse.shape) <= 1:
+        svd = None
+        X_title = X_title_sparse.toarray().astype(np.float32) * TITLE_WEIGHT
+    else:
+        max_rank = min(X_title_sparse.shape[0], X_title_sparse.shape[1])
+        n_components = max(1, min(256, max_rank - 1))
+        svd = TruncatedSVD(n_components=n_components, random_state=42)
+        X_title = svd.fit_transform(X_title_sparse).astype(np.float32) * TITLE_WEIGHT
 
     hasher = FeatureHasher(n_features=512, input_type="string", alternate_sign=False)
     author_tokens = catalog_df["AuthorId"].astype(str).apply(lambda a: [f"author={a}"]).tolist()
@@ -85,7 +91,7 @@ def ensure_recommender(source_df: pd.DataFrame) -> pd.DataFrame:
 
 def vectorize_one_book(book_df: pd.DataFrame) -> np.ndarray:
     """Vectorize a single-row DataFrame into the feature space."""
-    if _scaler is None or _tfidf is None or _svd is None or _hasher is None:
+    if _scaler is None or _tfidf is None or _hasher is None:
         raise ValueError("Recommender is not initialized. Call ensure_recommender() first.")
 
     row = book_df.iloc[0]
@@ -99,7 +105,11 @@ def vectorize_one_book(book_df: pd.DataFrame) -> np.ndarray:
     author_id = str(int(row["AuthorId"])) if "AuthorId" in row else "0"
     X_author_vec = _hasher.transform([[f"author={author_id}"]]).toarray().astype(np.float32) * AUTHOR_WEIGHT
 
-    X_title_vec = _svd.transform(_tfidf.transform([row["Name"]])).astype(np.float32) * TITLE_WEIGHT
+    X_title_sparse = _tfidf.transform([row["Name"]])
+    if _svd is None:
+        X_title_vec = X_title_sparse.toarray().astype(np.float32) * TITLE_WEIGHT
+    else:
+        X_title_vec = _svd.transform(X_title_sparse).astype(np.float32) * TITLE_WEIGHT
 
     vec = np.hstack([X_num_vec, X_author_vec, X_title_vec]).astype(np.float32)
     faiss.normalize_L2(vec)
