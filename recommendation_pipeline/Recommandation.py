@@ -2,7 +2,10 @@
 from typing import List
 from pydantic import BaseModel
 
-from models import Book
+try:
+    from .models import Book
+except ImportError:
+    from models import Book
 
 
 import kagglehub
