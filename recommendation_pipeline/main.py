@@ -20,6 +20,34 @@ _data_error: str | None = None
 _data_loading = False
 
 
+def _get_ready_data_for_request():
+    global _data_df, _data_error
+
+    with _data_lock:
+        df = _data_df
+        loading = _data_loading
+
+    if df is not None:
+        return df
+
+    if loading:
+        raise HTTPException(status_code=503, detail="Data not ready yet.")
+
+    # Fallback for first request/test scenarios: load synchronously once.
+    try:
+        df = getData()
+    except Exception as exc:
+        with _data_lock:
+            _data_error = str(exc)
+        raise HTTPException(status_code=500, detail=f"Data load failed: {exc}") from exc
+
+    with _data_lock:
+        _data_df = df
+        _data_error = None
+
+    return df
+
+
 def _load_data_worker() -> None:
     global _data_df, _data_error, _data_loading
 
@@ -59,15 +87,17 @@ class RecommendRequest(BaseModel):
 
 @app.post("/recommend")
 def recommend(req: RecommendRequest):
+    owned_books = req.owned_books if isinstance(req.owned_books, list) else [req.owned_books]
 
     # simple error handling
-    if req.owned_books is None or len(req.owned_books) == 0:
+    if not owned_books:
         raise HTTPException(status_code=400, detail="owned_books must be provided and cannot be empty.")
     if req.k <= 0:
         raise HTTPException(status_code=400, detail="k must be a positive integer.")        
 
     try:
-        return {"recommendations": make_recommendations(req.owned_books, req.k)}
+        df = _get_ready_data_for_request()
+        return {"recommendations": make_recommendations(owned_books, req.k, df)}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
