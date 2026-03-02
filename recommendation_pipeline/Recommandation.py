@@ -7,13 +7,15 @@ try:
 except ImportError:
     from models import Book
 
-
+from Recommendation_system import recommend_from_books, df, authorid_to_name
 import kagglehub
 import pandas as pd
 import json
 import csv
 import io
 import zipfile
+
+from typing import Union
 from functools import lru_cache
 
 
@@ -207,15 +209,54 @@ def getData():
 
 
 
+def make_recommendations(owned_books: List[Book] | Book, k: int, df: pd.DataFrame) -> List[Recommandation]:
+    """
+    Make recommendations based on user-owned books.
+    Parameters:
+        owned_books: List of Book objects or a single Book
+        k: number of recommendations
+        df: the dataset DataFrame to use for recommendations
+    Returns:
+        List of Recommandation objects
+    """
+    if isinstance(owned_books, Book):
+        owned_books = [owned_books]
 
-def convertIdToBookName(book_id: int) -> str:
-    # TODO: implement this function later.
-    return f"Book_{book_id}"
+    if not owned_books:
+        return []
 
-def make_recommendations(owned_books: List[Book] | Book, k: int) -> List[Recommandation]:
-    # TOOD: implement the actual recommendation logic here.
-    recommendations = []
-    for i in range(k):
-        book_name = convertIdToBookName(i + 1)
-        recommendations.append(Recommandation(book=Book(title=book_name), score=0.5))
+    # Convert Book models into single-row DataFrames
+    book_dfs = []
+    for book in owned_books:
+        match = df[df["Name"] == book.title]
+        if match.empty:
+            continue
+        book_dfs.append(match.iloc[[0]])
+
+    if not book_dfs:
+        # None of the user's books were found in the dataset
+        return []
+
+    # Call the recommendation engine
+    raw_results = recommend_from_books(book_dfs, k)
+
+    recommendations: List[Recommandation] = []
+
+    for row, score in raw_results:
+        book_model = Book(
+            id=int(row["Id"]),
+            title=row["Name"],
+            authors=[row["Authors"]] if "Authors" in row else None,
+            publicationYear=int(row["PublishYear"]) if "PublishYear" in row else None,
+        )
+        recommendations.append(Recommandation(book=book_model, score=score))
+
     return recommendations
+
+#Should return like this: class Recommandation(BaseModel):
+    #book: Book
+    #score: float
+
+
+
+

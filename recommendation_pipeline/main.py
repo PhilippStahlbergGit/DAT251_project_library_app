@@ -67,7 +67,12 @@ def recommend(req: RecommendRequest):
         raise HTTPException(status_code=400, detail="k must be a positive integer.")        
 
     try:
-        return {"recommendations": make_recommendations(req.owned_books, req.k)}
+        with _data_lock:
+            df = _data_df
+
+        if df is None:
+            raise HTTPException(status_code=503, detail="Data not ready yet.")
+        return {"recommendations": make_recommendations(req.owned_books, req.k, df)}
     except ValueError as exc:
         raise HTTPException(status_code=400, detail=str(exc)) from exc
 
