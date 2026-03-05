@@ -10,7 +10,8 @@ import app.main.LibraryApp.domain.enums.LoanStatus;
 
 @Service
 public class LoanService {
-
+    // TODO: implement set loan status method
+    
     private List<Loan> loans;
 
     public LoanService() {
