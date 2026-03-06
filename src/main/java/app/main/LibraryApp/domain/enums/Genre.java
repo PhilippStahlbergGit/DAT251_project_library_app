@@ -8,5 +8,6 @@ public enum Genre {
     MYSTERY,
     BIOGRAPHY,
     HISTORY,
-    ROMANCE
+    ROMANCE,
+    UNKNOWN
 }
