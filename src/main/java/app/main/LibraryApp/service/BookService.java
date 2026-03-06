@@ -1,5 +1,6 @@
 package app.main.LibraryApp.service;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import app.main.LibraryApp.domain.Book;
@@ -14,11 +15,13 @@ public class BookService {
 
     List<Book> books;
     private final BookSearch bookSearch;
+    private final BookRepository bookRepository;
 
 
-    public BookService(BookSearch bookSearch) {
+    public BookService(BookSearch bookSearch, BookRepository bookRepository) {
         this.books = new ArrayList<>();
         this.bookSearch = bookSearch;
+        this.bookRepository = bookRepository;
     }
 
     public Book addBook(BookRequest book) {
@@ -29,11 +32,9 @@ public class BookService {
         newBook = bookSearch.completeBookInfo(newBook);
         this.books.add(newBook);
         return newBook;
-    private final BookRepository bookRepository;
-
-    public BookService(BookRepository bookRepository) {
-        this.bookRepository = bookRepository;
     }
+    
+
 
     public Book addBook(Book book) {
         return bookRepository.save(book);
@@ -52,3 +53,4 @@ public class BookService {
     }
 
 }
+
