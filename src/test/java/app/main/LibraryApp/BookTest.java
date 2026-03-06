@@ -21,7 +21,7 @@ class BookTest {
         // test for adding a book to the library
         
         BookRepository bookRepository = mock(BookRepository.class);
-        BookService bookService = new BookService(bookRepository);
+        BookService bookService = new BookService(null, bookRepository);
 
         Book book = new Book();
         book.setTitle("1984");
@@ -42,7 +42,7 @@ class BookTest {
         // test for retrieving all books from the library
         
         BookRepository bookRepository = mock(BookRepository.class);
-        BookService bookService = new BookService(bookRepository);
+        BookService bookService = new BookService(null, bookRepository);
 
         Book book1 = new Book();
         book1.setTitle("The Catcher in the Rye");
@@ -68,7 +68,7 @@ class BookTest {
         // test for deleting a book from the library
         
         BookRepository bookRepository = mock(BookRepository.class);
-        BookService bookService = new BookService(bookRepository);
+        BookService bookService = new BookService(null, bookRepository);
 
         Long bookId = 1L;
         when(bookRepository.existsById(bookId)).thenReturn(true);
@@ -84,7 +84,7 @@ class BookTest {
         // test for deleting a book that does not exist in the library
         
         BookRepository bookRepository = mock(BookRepository.class);
-        BookService bookService = new BookService(bookRepository);
+        BookService bookService = new BookService(null, bookRepository);
 
         Long bookId = 2L;
         when(bookRepository.existsById(bookId)).thenReturn(false);
