@@ -1,3 +1,17 @@
 spring:
   application:
     name: LibraryApp
+  datasource:
+    url: jdbc:h2:mem:librarydb
+    driver-class-name: org.h2.Driver
+    username: sa
+    password:
+  h2:
+    console:
+      enabled: true
+      path: /h2-console
+  jpa:
+    hibernate:
+      ddl-auto: create-drop
+    show-sql: true
+    database-platform: org.hibernate.dialect.H2Dialect

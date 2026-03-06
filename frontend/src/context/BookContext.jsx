@@ -6,42 +6,30 @@ export function BookProvider({ children }) {
   const [books, setBooks] = useState([]);
 
   const addBook = async ({ title, author, year }) => {
-    // TODO: replace mock with API call
-    // const res = await fetch("/api/books", {
-    //   method: "POST",
-    //   headers: { "Content-Type": "application/json" },
-    //   body: JSON.stringify({ title, author, year }),
-    // });
-    // if (!res.ok) throw new Error(await res.text());
-    // const newBook = await res.json();
 
-    // --- mock for now ---
-    const newBook = { id: Date.now(), title, author, year };
-    console.log("MOCK addBook:", newBook);
+     const res = await fetch("/api/books", {
+       method: "POST",
+       headers: { "Content-Type": "application/json" },
+       body: JSON.stringify({ title, author, year }),
+     });
+     if (!res.ok) throw new Error(await res.text());
+     const newBook = await res.json();
+
 
     setBooks((prev) => [...prev, newBook]);
   };
 
   const fetchBooks = async () => {
-    // TODO: replace mock with API call
-    // const res = await fetch("/api/books");
-    // if (!res.ok) throw new Error(await res.text());
-    // const data = await res.json();
-    // setBooks(data);
+     const res = await fetch("/api/books");
+     if (!res.ok) throw new Error(await res.text());
+     const data = await res.json();
+     setBooks(data);
 
-    // --- mock for now ---
-    console.log("MOCK fetchBooks");
   };
 
   const deleteBook = async (id) => {
-    // TODO: replace mock with API call
-    // const res = await fetch(`/api/books/${id}`, { method: "DELETE" });
-    // if (!res.ok) throw new Error(await res.text());
-
-    // --- mock for now ---
-    console.log("MOCK deleteBook:", id);
-
-    setBooks((prev) => prev.filter((b) => b.id !== id));
+    const res = await fetch(`/api/books/${id}`, { method: "DELETE" });
+    if (!res.ok) throw new Error(await res.text());
   };
 
   const value = useMemo(

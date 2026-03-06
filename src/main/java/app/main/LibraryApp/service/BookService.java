@@ -1,11 +1,10 @@
 package app.main.LibraryApp.service;
 
-import java.util.ArrayList;
-import java.util.Collection;
 import java.util.List;
 
 import app.main.LibraryApp.domain.Book;
 import app.main.LibraryApp.domain.dto.BookRequest;
+import app.main.LibraryApp.repository.BookRepository;
 
 import org.springframework.stereotype.Service;
 import app.main.LibraryApp.API.BookSearch;
@@ -30,14 +29,26 @@ public class BookService {
         newBook = bookSearch.completeBookInfo(newBook);
         this.books.add(newBook);
         return newBook;
+    private final BookRepository bookRepository;
+
+    public BookService(BookRepository bookRepository) {
+        this.bookRepository = bookRepository;
     }
 
-    public Collection<Book> getAllBooks() {
-        return this.books;
+    public Book addBook(Book book) {
+        return bookRepository.save(book);
+    }
+
+    public List<Book> getAllBooks() {
+        return bookRepository.findAll();
     }
 
     public boolean deleteBook(Long id) {
-        return this.books.removeIf(book -> book.getId().equals(id));
+        if (bookRepository.existsById(id)) {
+            bookRepository.deleteById(id);
+            return true;
+        }
+        return false;
     }
 
 }
