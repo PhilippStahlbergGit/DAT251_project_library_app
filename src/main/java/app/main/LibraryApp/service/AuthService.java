@@ -17,13 +17,16 @@ public class AuthService {
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
     private final JwtService jwtService;
+    private final TokenBlacklistService tokenBlacklistService;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-            AuthenticationManager authenticationManager, JwtService jwtService) {
+            AuthenticationManager authenticationManager, JwtService jwtService,
+            TokenBlacklistService tokenBlacklistService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
         this.jwtService = jwtService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     public void register(RegisterRequest request) {
@@ -48,9 +51,15 @@ public class AuthService {
         return response;
     }
 
-    public void logout() {
-        // TODO: Implement logout logic (e.g., invalidate token or session)
-
+    public void logout(String token) {
+        System.out.println(">>> AuthService logout called with: " + token);
+        if (token != null && token.startsWith("Bearer ")) {
+            String jwt = token.substring(7);
+            System.out.println(">>> Blacklisting token: " + jwt);
+            tokenBlacklistService.blacklistToken(jwt);
+        } else {
+            System.out.println(">>> Token was null or didn't start with Bearer");
+        }
     }
 
     private UserResponse mapToUserResponse(User user, String token) {

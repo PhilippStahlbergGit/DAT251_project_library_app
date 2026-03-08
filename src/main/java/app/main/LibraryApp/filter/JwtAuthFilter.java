@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import app.main.LibraryApp.service.JwtService;
+import app.main.LibraryApp.service.TokenBlacklistService;
 import app.main.LibraryApp.service.UserDetailsServiceImpl;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.ServletException;
@@ -21,10 +22,13 @@ public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtService jwtService;
     private final UserDetailsServiceImpl userDetailsService;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public JwtAuthFilter(JwtService jwtService, UserDetailsServiceImpl userDetailsService) {
+    public JwtAuthFilter(JwtService jwtService, UserDetailsServiceImpl userDetailsService,
+            TokenBlacklistService tokenBlacklistService) {
         this.jwtService = jwtService;
         this.userDetailsService = userDetailsService;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
@@ -47,6 +51,12 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             UserDetails userDetails = userDetailsService.loadUserByUsername(email);
 
             if (jwtService.isTokenValid(token, userDetails)) {
+
+                if (tokenBlacklistService.isBlacklisted(token)) {
+                    response.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                    return;
+                }
+
                 UsernamePasswordAuthenticationToken authToken = new UsernamePasswordAuthenticationToken(
                         userDetails, null, userDetails.getAuthorities());
                 authToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
