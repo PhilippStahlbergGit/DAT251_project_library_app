@@ -7,7 +7,7 @@ import app.main.LibraryApp.domain.dto.BookRequest;
 import app.main.LibraryApp.repository.BookRepository;
 
 import org.springframework.stereotype.Service;
-import app.main.LibraryApp.API.BookSearch;
+import app.main.LibraryApp.blablabla.BookSearch;
 
 @Service
 public class BookService {

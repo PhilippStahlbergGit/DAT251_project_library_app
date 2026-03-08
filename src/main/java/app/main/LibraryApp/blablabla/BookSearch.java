@@ -1,4 +1,4 @@
-package app.main.LibraryApp.API;
+package app.main.LibraryApp.blablabla;
 
 import java.io.IOException;
 import java.net.URI;
@@ -19,49 +19,49 @@ import tools.jackson.databind.ObjectMapper;
 
 @Service
 public class BookSearch {
-    
-    public Book completeBookInfo(Book book){
+
+    public Book completeBookInfo(Book book) {
         // Implement logic to fetch book from API and populate all fields
 
-        // Search by given fields (e.g., title, author) to find the best match in the API
+        // Search by given fields (e.g., title, author) to find the best match in the
+        // API
         String title = book.getTitle();
         List<String> authors = book.getAuthors();
         int publicationYear = book.getPublicationYear();
 
-        String searchQuery =
-            "title_suggest:\"" + title + "\" " +
-            "author:\"" + authors.get(0) + "\" " +
-            "first_publish_year:" + publicationYear;
+        String searchQuery = "title_suggest:\"" + title + "\" " +
+                "author:\"" + authors.get(0) + "\" " +
+                "first_publish_year:" + publicationYear;
 
         try {
-        HttpClient client = HttpClient.newHttpClient();
+            HttpClient client = HttpClient.newHttpClient();
 
-        String query = URLEncoder.encode(searchQuery, StandardCharsets.UTF_8);
+            String query = URLEncoder.encode(searchQuery, StandardCharsets.UTF_8);
 
-        // 'eng' is the Open Library language code for English
-        String url = "https://openlibrary.org/search.json"
-                + "?q=" + query
-                + "&language=eng"
-                + "&sort" // The default is to sort by relevance
-                + "&fields=title,author_name,language,isbn,first_publish_year,publisher,subject";
+            // 'eng' is the Open Library language code for English
+            String url = "https://openlibrary.org/search.json"
+                    + "?q=" + query
+                    + "&language=eng"
+                    + "&sort" // The default is to sort by relevance
+                    + "&fields=title,author_name,language,isbn,first_publish_year,publisher,subject";
 
-        HttpRequest request = HttpRequest.newBuilder()
-                .uri(URI.create(url))
-                .header("User-Agent", "MyLibraryApp")
-                .GET()
-                .build();
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("User-Agent", "MyLibraryApp")
+                    .GET()
+                    .build();
 
-        
-        HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
 
-        System.out.println("Status: " + response.statusCode());
-        System.out.println("Body: " + response.body());
+            System.out.println("Status: " + response.statusCode());
+            System.out.println("Body: " + response.body());
 
-        ObjectMapper mapper = new ObjectMapper();
-        JsonNode root = mapper.readTree(response.body());
-        JsonNode docs = root.get("docs");
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(response.body());
+            JsonNode docs = root.get("docs");
 
-            //Get first result (most relevant) and populate the book object with the retrieved information
+            // Get first result (most relevant) and populate the book object with the
+            // retrieved information
             JsonNode Jsonbook = docs.path(0);
             // Populate the book object with the retrieved information
             book.setTitle(Jsonbook.path("title").asText("N/A"));
@@ -69,9 +69,10 @@ public class BookSearch {
             book.setPublicationYear(Jsonbook.path("first_publish_year").asInt(0));
             book.setIsbn(Jsonbook.path("isbn").path(0).asText("N/A"));
 
-            // TODO: Currently only taking the first publisher, should ideally only show the most relevant one, but this is a start
+            // TODO: Currently only taking the first publisher, should ideally only show the
+            // most relevant one, but this is a start
             book.setPublisher(Jsonbook.path("publisher").path(0).asText("N/A"));
-            
+
             JsonNode subjectNode = Jsonbook.path("subject");
             List<String> subjects = new ArrayList<>();
             if (subjectNode.isArray()) {
@@ -79,31 +80,32 @@ public class BookSearch {
                     subjects.add(n.asText(""));
                 }
             }
-            // TODO: Currently only taking one subject/genre, should ideally show all relevant ones
+            // TODO: Currently only taking one subject/genre, should ideally show all
+            // relevant ones
             book.setGenre(mapSubjectToGenre(subjects));
 
             System.out.println(
-                book + " by " + 
-                book.getAuthors().get(0) + 
-                " (" + book.getPublicationYear() + ")" + 
-                " ISBN: " + book.getIsbn());
+                    book + " by " +
+                            book.getAuthors().get(0) +
+                            " (" + book.getPublicationYear() + ")" +
+                            " ISBN: " + book.getIsbn());
 
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException("Failed to fetch book information from API", e);
         }
         return book;
-        
+
     }
 
     private Genre mapSubjectToGenre(List<String> subjects) {
-        
+
         if (subjects == null || subjects.isEmpty()) {
             return Genre.UNKNOWN;
         }
 
-        for(String subject : subjects) {
+        for (String subject : subjects) {
             String lowerSubject = subject.toLowerCase();
-            
+
             if (lowerSubject.contains("non-fiction") || lowerSubject.contains("nonfiction")) {
                 return Genre.NON_FICTION;
             } else if (lowerSubject.contains("science fiction") || lowerSubject.contains("sci-fi")) {
