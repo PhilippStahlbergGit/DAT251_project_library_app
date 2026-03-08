@@ -1,0 +1,34 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/loan'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "bookTitle": "The Great Gatsby",
+      "borrowerName": "Jane Doe"
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.expect(pm.response.code).to.eql(200);
+      });
+      pm.test("Response has 'loanStatus' equal to 'ACTIVE'", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData.loanStatus).to.eql("ACTIVE");
+      });
+      pm.test("Response has 'borrowerName' equal to 'Jane Doe'", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData.borrowerName).to.eql("Jane Doe");
+      });
+      pm.test("Response has 'bookTitle' equal to 'The Great Gatsby'", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData.bookTitle).to.eql("The Great Gatsby");
+      });
+      pm.collectionVariables.set("loanId", pm.response.json().id);

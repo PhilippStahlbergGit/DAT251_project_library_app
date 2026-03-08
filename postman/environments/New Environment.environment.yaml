@@ -1,0 +1,6 @@
+name: New Environment
+values:
+  - key: baseUrl
+    value: 'http://localhost:8080'
+    type: default
+    enabled: true
