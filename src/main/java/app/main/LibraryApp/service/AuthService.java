@@ -36,11 +36,10 @@ public class AuthService {
         userRepository.save(user);
     }
 
-    public String login(LoginRequest request) {
+    public UserResponse login(LoginRequest request) {
         authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-        // TODO: Generate and return a JWT token or session ID
-        return "generated_token";
+        return mapToUserResponse(userRepository.findByEmail(request.getEmail()).orElseThrow());
     }
 
     public void logout() {
