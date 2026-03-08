@@ -31,7 +31,8 @@ public class SecurityConfig {
         http
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll() // public endpoints
+                        .requestMatchers("/api/auth/logout").authenticated() // require auth for logout
+                        .requestMatchers("/api/auth/**").permitAll() // other auth endpoints are public
                         .anyRequest().authenticated() // everything else requires auth
                 )
                 .sessionManagement(session -> session
