@@ -12,14 +12,10 @@ public class TokenBlacklistService {
 
     public void blacklistToken(String token) {
         blacklistedTokens.add(token);
-        System.out.println(">>> Token blacklisted. Blacklist size: " + blacklistedTokens.size());
-        System.out.println(">>> Token: " + token);
     }
 
     public boolean isBlacklisted(String token) {
         boolean result = blacklistedTokens.contains(token);
-        System.out.println(">>> Checking blacklist. Result: " + result);
-        System.out.println(">>> Token: " + token);
         return result;
     }
 }

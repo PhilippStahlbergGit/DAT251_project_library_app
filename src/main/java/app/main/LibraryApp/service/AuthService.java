@@ -52,13 +52,9 @@ public class AuthService {
     }
 
     public void logout(String token) {
-        System.out.println(">>> AuthService logout called with: " + token);
         if (token != null && token.startsWith("Bearer ")) {
             String jwt = token.substring(7);
-            System.out.println(">>> Blacklisting token: " + jwt);
             tokenBlacklistService.blacklistToken(jwt);
-        } else {
-            System.out.println(">>> Token was null or didn't start with Bearer");
         }
     }
 
