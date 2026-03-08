@@ -2,12 +2,12 @@ package app.main.LibraryApp.service;
 
 import java.util.List;
 
+import app.main.LibraryApp.api.BookSearch;
 import app.main.LibraryApp.domain.Book;
 import app.main.LibraryApp.domain.dto.BookRequest;
 import app.main.LibraryApp.repository.BookRepository;
 
 import org.springframework.stereotype.Service;
-import app.main.LibraryApp.API.BookSearch;
 
 @Service
 public class BookService {

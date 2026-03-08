@@ -4,14 +4,26 @@ import app.main.LibraryApp.domain.dto.LoginRequest;
 import app.main.LibraryApp.domain.dto.RegisterRequest;
 import app.main.LibraryApp.domain.dto.UserResponse;
 import app.main.LibraryApp.repository.UserRepository;
+
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import app.main.LibraryApp.domain.User;
+
 @Service
 public class AuthService {
     private final UserRepository userRepository;
-    public AuthService(UserRepository userRepository) {
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+
+    public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
+            AuthenticationManager authenticationManager) {
         this.userRepository = userRepository;
-    }  
+        this.passwordEncoder = passwordEncoder;
+        this.authenticationManager = authenticationManager;
+    }
+
     public void register(RegisterRequest request) {
         System.out.println("Registering user: " + request.getName() + ", " + request.getEmail());
         if (userRepository.findByEmail(request.getEmail()).isPresent()) {
@@ -20,23 +32,18 @@ public class AuthService {
         User user = new User();
         user.setName(request.getName());
         user.setEmail(request.getEmail());
-        //Må hashes!!!!!!!!!!!
-        user.setPassword(request.getPassword());
+        user.setPassword(passwordEncoder.encode(request.getPassword()));
         userRepository.save(user);
     }
-    public UserResponse login(LoginRequest request) {
-        User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() -> new RuntimeException("User not found"));
-        //Må sjekkes med hash
-        if (!user.getPassword().equals(request.getPassword())) {
-            throw new RuntimeException("Invalid password");
-        }
-        return mapToUserResponse(user);
+
+    public void login(LoginRequest request) {
+        authenticationManager
+                .authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
     }
 
     public void logout() {
+        // TODO: Implement logout logic (e.g., invalidate token or session)
 
-        System.out.println("Logging out user");
     }
 
     private UserResponse mapToUserResponse(User user) {
@@ -46,7 +53,5 @@ public class AuthService {
         response.setEmail(user.getEmail());
         return response;
     }
-
-    
 
 }

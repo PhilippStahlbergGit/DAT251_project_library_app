@@ -33,10 +33,10 @@ public class AuthController {
 
     // POST /api/auth/login
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
+    public void login(@RequestBody LoginRequest request) {
         // handle login, return token or session
-        UserResponse user = authService.login(request);
-        return ResponseEntity.ok(Map.of("user", user));
+        authService.login(request);
+
     }
 
     // POST /api/auth/logout
