@@ -16,12 +16,14 @@ public class AuthService {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
     public AuthService(UserRepository userRepository, PasswordEncoder passwordEncoder,
-            AuthenticationManager authenticationManager) {
+            AuthenticationManager authenticationManager, JwtService jwtService) {
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
+        this.jwtService = jwtService;
     }
 
     public void register(RegisterRequest request) {
@@ -39,7 +41,11 @@ public class AuthService {
     public UserResponse login(LoginRequest request) {
         authenticationManager
                 .authenticate(new UsernamePasswordAuthenticationToken(request.getEmail(), request.getPassword()));
-        return mapToUserResponse(userRepository.findByEmail(request.getEmail()).orElseThrow());
+        User user = userRepository.findByEmail(request.getEmail()).orElseThrow();
+        String token = jwtService.generateToken(user.getEmail());
+        UserResponse response = mapToUserResponse(user, token);
+
+        return response;
     }
 
     public void logout() {
@@ -47,11 +53,12 @@ public class AuthService {
 
     }
 
-    private UserResponse mapToUserResponse(User user) {
+    private UserResponse mapToUserResponse(User user, String token) {
         UserResponse response = new UserResponse();
         response.setId(user.getId());
         response.setName(user.getName());
         response.setEmail(user.getEmail());
+        response.setToken(token);
         return response;
     }
 
