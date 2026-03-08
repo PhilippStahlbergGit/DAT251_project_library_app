@@ -1,4 +1,4 @@
-package app.main.LibraryApp.API;
+package app.main.LibraryApp.api;
 
 import java.io.IOException;
 import java.net.URI;
