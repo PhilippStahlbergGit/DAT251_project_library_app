@@ -19,7 +19,7 @@ class BookTest {
     @Test
     void testAddBook() {
         // test for adding a book to the library
-        
+
         BookRepository bookRepository = mock(BookRepository.class);
         BookService bookService = new BookService(null, bookRepository);
 
@@ -27,10 +27,10 @@ class BookTest {
         book.setTitle("1984");
         book.setAuthors(List.of("George Orwell"));
         book.setIsbn("978-0451524935");
-        
+
         when(bookRepository.save(book)).thenReturn(book);
         Book addedBook = bookService.addBook(book);
-        
+
         assertEquals("1984", addedBook.getTitle());
         assertEquals(List.of("George Orwell"), addedBook.getAuthors());
         assertEquals("978-0451524935", addedBook.getIsbn());
@@ -40,7 +40,7 @@ class BookTest {
     @Test
     void testGetAllBooks() {
         // test for retrieving all books from the library
-        
+
         BookRepository bookRepository = mock(BookRepository.class);
         BookService bookService = new BookService(null, bookRepository);
 
@@ -66,14 +66,14 @@ class BookTest {
     @Test
     void testDeleteBook() {
         // test for deleting a book from the library
-        
+
         BookRepository bookRepository = mock(BookRepository.class);
         BookService bookService = new BookService(null, bookRepository);
 
         Long bookId = 1L;
         when(bookRepository.existsById(bookId)).thenReturn(true);
         boolean result = bookService.deleteBook(bookId);
-        
+
         assertTrue(result);
         verify(bookRepository).existsById(bookId);
         verify(bookRepository).deleteById(bookId);
@@ -82,14 +82,14 @@ class BookTest {
     @Test
     void testDeleteBookNotFound() {
         // test for deleting a book that does not exist in the library
-        
+
         BookRepository bookRepository = mock(BookRepository.class);
         BookService bookService = new BookService(null, bookRepository);
 
         Long bookId = 2L;
         when(bookRepository.existsById(bookId)).thenReturn(false);
         boolean result = bookService.deleteBook(bookId);
-        
+
         assertFalse(result);
         verify(bookRepository).existsById(bookId);
         verify(bookRepository, never()).deleteById(bookId);
