@@ -1,0 +1,14 @@
+$kind: http-request
+method: DELETE
+url: '{{baseUrl}}/api/books/99999'
+order: 5000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 404", function () {
+          pm.expect(pm.response.code).to.eql(404);
+      });
+      pm.test("Response body contains 'Book not found'", function () {
+          pm.expect(pm.response.text()).to.include("Book not found");
+      });

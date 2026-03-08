@@ -5,6 +5,7 @@ import java.util.Map;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -33,17 +34,19 @@ public class AuthController {
 
     // POST /api/auth/login
     @PostMapping("/login")
-    public ResponseEntity<Map<String, Object>> login(@RequestBody LoginRequest request) {
+    public ResponseEntity<UserResponse> login(@RequestBody LoginRequest request) {
         // handle login, return token or session
-        UserResponse user = authService.login(request);
-        return ResponseEntity.ok(Map.of("user", user));
+        UserResponse response = authService.login(request);
+        return ResponseEntity.ok(response);
     }
 
     // POST /api/auth/logout
     @PostMapping("/logout")
-    public ResponseEntity<String> logout() {
-        // handle logout, invalidate token or session
-        authService.logout();
+    public ResponseEntity<String> logout(@RequestHeader(value = "Authorization", required = false) String authHeader) {
+        if (authHeader == null) {
+            return ResponseEntity.badRequest().body("No Authorization header provided");
+        }
+        authService.logout(authHeader); // pass the full header including "Bearer "
         return ResponseEntity.ok("User logged out");
     }
 }

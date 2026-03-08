@@ -1,0 +1,11 @@
+$kind: collection
+name: Library App API
+variables:
+  - key: baseUrl
+    value: 'http://localhost:8080'
+  - key: bookId
+    value: ''
+  - key: userId
+    value: ''
+  - key: loanId
+    value: ''
