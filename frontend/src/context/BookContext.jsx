@@ -1,9 +1,17 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { useAuth } from "./AuthContext";
 const BookContext = createContext(null);
 export function BookProvider({ children }) {
   const [books, setBooks] = useState([]);
-  const { authFetch } = useAuth();
+  const { authFetch, isAuthenticated } = useAuth();
+  // automatically fetch books when user logs in
+  useEffect(() => {
+    if (isAuthenticated) {
+      fetchBooks();
+    } else {
+      setBooks([]); // clear books on logout
+    }
+  }, [isAuthenticated]);
   const addBook = async ({ title, author, year }) => {
     const res = await authFetch("/api/books", {
       method: "POST",

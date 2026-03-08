@@ -1,21 +1,24 @@
-import { createContext, useContext, useMemo, useState } from "react";
+import { createContext, useCallback, useContext, useMemo, useState } from "react";
 const AuthContext = createContext(null);
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     const saved = localStorage.getItem("library_user");
     return saved ? JSON.parse(saved) : null;
   });
-  const authFetch = (url, options = {}) => {
-    const token = user?.token;
-    return fetch(url, {
-      ...options,
-      headers: {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` }),
-        ...options.headers,
-      },
-    });
-  };
+  const authFetch = useCallback(
+    (url, options = {}) => {
+      const token = user?.token;
+      return fetch(url, {
+        ...options,
+        headers: {
+          "Content-Type": "application/json",
+          ...(token && { Authorization: `Bearer ${token}` }),
+          ...options.headers,
+        },
+      });
+    },
+    [user]
+  );
   const register = async ({ name, email, password }) => {
     const res = await fetch("/api/auth/register", {
       method: "POST",
@@ -43,7 +46,7 @@ export function AuthProvider({ children }) {
   };
   const value = useMemo(
     () => ({ user, isAuthenticated: !!user, register, login, logout, authFetch }),
-    [user]
+    [user, authFetch]
   );
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
