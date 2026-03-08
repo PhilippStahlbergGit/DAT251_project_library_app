@@ -1,0 +1,12 @@
+$kind: http-request
+name: 'Delete (Return) Loan'
+method: PUT
+url: '{{baseUrl}}/api/loan/delete/{{loanId}}'
+order: 3000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.expect(pm.response.code).to.eql(200);
+      });

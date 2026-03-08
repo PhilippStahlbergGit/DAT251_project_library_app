@@ -1,0 +1,32 @@
+$kind: http-request
+method: POST
+url: '{{baseUrl}}/api/books'
+order: 1000
+headers:
+  - key: Content-Type
+    value: application/json
+body:
+  type: json
+  content: |-
+    {
+      "title": "The Great Gatsby",
+      "author": "F. Scott Fitzgerald",
+      "year": 1925
+    }
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.expect(pm.response.code).to.eql(200);
+      });
+      pm.test("Response has 'id' field (not null)", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData.id).to.not.be.null;
+          pm.expect(jsonData.id).to.not.be.undefined;
+      });
+      pm.test("Response has 'title' equal to 'The Great Gatsby'", function () {
+          var jsonData = pm.response.json();
+          pm.expect(jsonData.title).to.eql("The Great Gatsby");
+      });
+      pm.collectionVariables.set("bookId", pm.response.json().id);

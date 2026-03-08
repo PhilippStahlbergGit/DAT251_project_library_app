@@ -1,0 +1,14 @@
+$kind: http-request
+method: DELETE
+url: '{{baseUrl}}/api/users/99999'
+order: 4000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 404", function () {
+          pm.expect(pm.response.code).to.eql(404);
+      });
+      pm.test("Response body contains 'User not found'", function () {
+          pm.expect(pm.response.text()).to.include("User not found");
+      });
