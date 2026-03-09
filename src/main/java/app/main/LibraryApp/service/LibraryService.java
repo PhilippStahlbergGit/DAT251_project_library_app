@@ -23,6 +23,7 @@ public class LibraryService {
     public Library createLibrary(User user) {
         Library library = new Library();
         library.setUser(user);
+        user.setLibrary(library);
         return libraryRepository.save(library);
     }
 }
