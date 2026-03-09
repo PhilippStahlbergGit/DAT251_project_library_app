@@ -17,12 +17,12 @@ export default function BooksPage() {
         <p className="books-empty">No books yet. Add some from the home page!</p>
       ) : (
         <div className="books-grid">
-          {books.map((book) => (
-            <div key={book.id} className="book-card">
-              <h3 className="book-title">{book.title}</h3>
-              <p className="book-author">{book.author}</p>
-              {book.year && <p className="book-year">{book.year}</p>}
-              <button className="book-delete" onClick={() => deleteBook(book.id)}>
+          {books.map((copy) => (
+            <div key={copy.id} className="book-card">
+              <h3 className="book-title">{copy.book?.title}</h3>
+              <p className="book-author">{copy.book?.authors?.[0]}</p>
+              {copy.book?.publicationYear && <p className="book-year">{copy.book.publicationYear}</p>}
+              <button className="book-delete" onClick={() => deleteBook(copy.id)}>
                 Remove
               </button>
             </div>

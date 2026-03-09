@@ -20,10 +20,12 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 
+import app.main.LibraryApp.domain.Book;
 import app.main.LibraryApp.domain.BookCopy;
 import app.main.LibraryApp.domain.User;
 import app.main.LibraryApp.domain.enums.AvailabilityStatus;
 import app.main.LibraryApp.repository.BookCopyRepository;
+import app.main.LibraryApp.repository.BookRepository;
 import app.main.LibraryApp.repository.UserRepository;
 import app.main.LibraryApp.service.LibraryService;
 import tools.jackson.databind.ObjectMapper;
@@ -45,6 +47,9 @@ class LoanBookTest {
 
     @Autowired
     private BookCopyRepository bookCopyRepository;
+
+    @Autowired
+    private BookRepository bookRepository;
 
     private Long availableBookCopyId;
 
@@ -74,8 +79,12 @@ class LoanBookTest {
         }
 
         // Create an available BookCopy in the lender's library for each test
+        Book book = new Book();
+        book.setTitle("Test Book");
+        bookRepository.save(book);
+
         BookCopy copy = new BookCopy();
-        copy.setTitle("Test Book");
+        copy.setBook(book);
         copy.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
         copy.setLibrary(libraryService.getLibraryByEmail("lender@test.com"));
         availableBookCopyId = bookCopyRepository.save(copy).getId();
