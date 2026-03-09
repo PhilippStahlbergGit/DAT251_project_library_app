@@ -9,6 +9,8 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
 
@@ -27,4 +29,7 @@ public class Book {
     private Integer publicationYear;
     private Genre genre;
 
+    @ManyToOne
+    @JoinColumn(name = "library_id")
+    private Library library;
 }
