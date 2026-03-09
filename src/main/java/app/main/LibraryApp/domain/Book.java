@@ -5,6 +5,7 @@ import java.util.List;
 import app.main.LibraryApp.domain.enums.Genre;
 import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -21,7 +22,7 @@ public class Book {
     private Long id;
     private String isbn;
     private String title;
-    @ElementCollection
+    @ElementCollection(fetch = FetchType.EAGER)
     private List<String> authors;
     private String publisher;
     private Integer publicationYear;

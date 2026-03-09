@@ -34,6 +34,7 @@ public class BookService {
         this.loanRepository = loanRepository;
     }
 
+    @Transactional
     public BookCopy addBook(BookRequest bookRequest, String email) {
         Book newBook = new Book();
         newBook.setTitle(bookRequest.getTitle());
