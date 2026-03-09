@@ -28,6 +28,8 @@ public class User {
     private Library library;
 
     private String email;
+
+    @JsonIgnore
     private String password;
 
 }
