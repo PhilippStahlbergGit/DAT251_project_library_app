@@ -4,7 +4,7 @@ import { useAuth } from "../../context/AuthContext.jsx";
 import "./AuthPages.css";
 
 export default function RegisterPage() {
-  const { register } = useAuth();
+  const { register, login } = useAuth();
   const navigate = useNavigate();
   const [form, setForm] = useState({ name: "", email: "", password: "" });
   const [error, setError] = useState("");
@@ -19,7 +19,8 @@ export default function RegisterPage() {
     setLoading(true);
     try {
       await register(form);
-      navigate("/login", { replace: true });
+      await login({ email: form.email, password: form.password });
+      navigate("/", { replace: true });
     } catch (err) {
       setError(err.message);
     } finally {

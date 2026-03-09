@@ -10,8 +10,10 @@ import app.main.LibraryApp.domain.dto.BookRequest;
 import app.main.LibraryApp.domain.enums.AvailabilityStatus;
 import app.main.LibraryApp.repository.BookCopyRepository;
 import app.main.LibraryApp.repository.BookRepository;
+import app.main.LibraryApp.repository.LoanRepository;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 public class BookService {
@@ -20,13 +22,16 @@ public class BookService {
     private final BookCopyRepository bookCopyRepository;
     private final BookSearch bookSearch;
     private final LibraryService libraryService;
+    private final LoanRepository loanRepository;
 
     public BookService(BookSearch bookSearch, BookRepository bookRepository,
-            BookCopyRepository bookCopyRepository, LibraryService libraryService) {
+            BookCopyRepository bookCopyRepository, LibraryService libraryService,
+            LoanRepository loanRepository) {
         this.bookRepository = bookRepository;
         this.bookCopyRepository = bookCopyRepository;
         this.bookSearch = bookSearch;
         this.libraryService = libraryService;
+        this.loanRepository = loanRepository;
     }
 
     public BookCopy addBook(BookRequest bookRequest, String email) {
@@ -49,12 +54,14 @@ public class BookService {
         return libraryService.getLibraryByEmail(email).getBookCopies();
     }
 
+    @Transactional
     public void deleteBook(String email, Long bookCopyId) {
         BookCopy copy = bookCopyRepository.findById(bookCopyId)
                 .orElseThrow(() -> new RuntimeException("Book not found"));
         if (!copy.getLibrary().getUser().getEmail().equals(email)) {
             throw new RuntimeException("Unauthorized");
         }
+        loanRepository.deleteByBookCopyId(bookCopyId);
         bookCopyRepository.delete(copy);
     }
 }

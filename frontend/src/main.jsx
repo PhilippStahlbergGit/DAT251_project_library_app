@@ -6,18 +6,21 @@ import { AuthProvider } from './context/AuthContext.jsx'
 import { BookProvider } from './context/BookContext.jsx'
 import { JokeProvider } from './context/JokeContext.jsx'
 import { RecommendationsProvider } from './context/RecommendationContext.jsx'
+import { LoanProvider } from './context/LoanContext.jsx'
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>
     <AuthProvider>
       <BookProvider>
-        <JokeProvider>
-          <RecommendationsProvider>
-            <BrowserRouter>
-              <App />
-            </BrowserRouter>
-          </RecommendationsProvider>
-        </JokeProvider>
+        <LoanProvider>
+          <JokeProvider>
+            <RecommendationsProvider>
+              <BrowserRouter>
+                <App />
+              </BrowserRouter>
+            </RecommendationsProvider>
+          </JokeProvider>
+        </LoanProvider>
       </BookProvider>
     </AuthProvider>
   </StrictMode>,

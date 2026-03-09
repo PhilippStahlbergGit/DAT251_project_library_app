@@ -29,7 +29,7 @@ public class LoanService {
     }
 
     @Transactional
-    public Loan createLoan(String borrowerEmail, LoanRequest request) {
+    public Loan createLoan(String requesterEmail, LoanRequest request) {
         BookCopy bookCopy = bookCopyRepository.findById(request.getBookCopyId())
                 .orElseThrow(() -> new RuntimeException("Book copy not found"));
 
@@ -37,7 +37,17 @@ public class LoanService {
             throw new RuntimeException("Book copy is not available");
         }
 
-        User borrower = userService.getUserByEmail(borrowerEmail);
+        User borrower;
+        if (request.getBorrowerEmail() != null && !request.getBorrowerEmail().isBlank()) {
+            // Owner is lending to someone else — verify the book belongs to the requester
+            if (!bookCopy.getLibrary().getUser().getEmail().equals(requesterEmail)) {
+                throw new RuntimeException("Unauthorized: book copy does not belong to your library");
+            }
+            borrower = userService.getUserByEmail(request.getBorrowerEmail());
+        } else {
+            // Requester is borrowing someone else's book
+            borrower = userService.getUserByEmail(requesterEmail);
+        }
 
         Loan loan = new Loan();
         loan.setBookCopy(bookCopy);

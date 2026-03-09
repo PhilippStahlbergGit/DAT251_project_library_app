@@ -8,4 +8,6 @@ import lombok.Data;
 public class LoanRequest {
     private Long bookCopyId;
     private LocalDate dueDate;
+    /** Set when the authenticated user is the owner lending to someone else. */
+    private String borrowerEmail;
 }
