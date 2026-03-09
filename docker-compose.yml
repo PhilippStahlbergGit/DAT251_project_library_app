@@ -1,0 +1,17 @@
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    ports:
+      - "8080:8080"
+    depends_on:
+      - recommendation
+
+  recommendation:
+    build:
+      context: ./recommendation_pipeline
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
