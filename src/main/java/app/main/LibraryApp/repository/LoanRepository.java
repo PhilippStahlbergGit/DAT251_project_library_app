@@ -8,4 +8,5 @@ import app.main.LibraryApp.domain.Loan;
 
 public interface LoanRepository extends JpaRepository<Loan, Long> {
     List<Loan> findByBorrowerId(Long borrowerId);
+    void deleteByBookCopyId(Long bookCopyId);
 }

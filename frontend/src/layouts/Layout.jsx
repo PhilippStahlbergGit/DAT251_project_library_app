@@ -20,6 +20,11 @@ export default function MainLayout() {
             <NavLink to="/about" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
               About
             </NavLink>
+            {isAuthenticated && (
+              <NavLink to="/loans" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+                Loans
+              </NavLink>
+            )}
             {!isAuthenticated ? (
              <>
                 <NavLink to="/login" className={({ isActive}) => `nav-link ${isActive ? "active" : ""}`}>

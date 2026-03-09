@@ -1,0 +1,156 @@
+.loans-page {
+  max-width: 720px;
+}
+
+.loans-lead {
+  color: var(--muted-ink);
+  font-size: 0.95rem;
+  margin: 0 0 1.5rem;
+}
+
+.loans-lead a {
+  color: var(--wood);
+  font-weight: 600;
+}
+
+/* Buttons */
+.loan-btn {
+  align-self: flex-start;
+  padding: 0.5rem 1.1rem;
+  background: var(--wood);
+  color: #fff7ea;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.18s ease;
+}
+
+.loan-btn:hover:not(:disabled) {
+  background: var(--wood-dark);
+}
+
+.loan-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.loan-btn--return {
+  background: #2e6b3e;
+  padding: 0.35rem 0.8rem;
+  font-size: 0.82rem;
+}
+
+.loan-btn--return:hover {
+  background: #22522f;
+}
+
+.loan-btn--delete {
+  background: transparent;
+  color: #a63232;
+  border: 1px solid #d4a0a0;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 400;
+}
+
+.loan-btn--delete:hover {
+  background: #a63232;
+  color: #fff;
+  border-color: #a63232;
+}
+
+/* Errors */
+.loan-error {
+  color: #a63232;
+  font-size: 0.88rem;
+  margin: 0;
+}
+
+.loan-action-error {
+  margin-bottom: 1rem;
+}
+
+/* Sections */
+.loan-section {
+  margin-bottom: 2rem;
+}
+
+.loans-empty {
+  color: var(--muted-ink);
+  font-style: italic;
+}
+
+/* Loan items */
+.loans-list {
+  list-style: none;
+  padding: 0;
+  margin: 0.8rem 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.loan-item {
+  background: #fbf6ed;
+  border: 1px solid #d8c7ad;
+  border-radius: 10px;
+  padding: 1rem 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  box-shadow: 0 2px 8px rgba(52, 34, 24, 0.05);
+}
+
+.loan-returned {
+  opacity: 0.75;
+}
+
+.loan-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  min-width: 0;
+}
+
+.loan-title {
+  font-size: 1rem;
+  color: #2a1f17;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.loan-meta {
+  font-size: 0.82rem;
+  color: var(--muted-ink);
+}
+
+.loan-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  flex-shrink: 0;
+}
+
+/* Status badges */
+.loan-badge {
+  font-size: 0.75rem;
+  font-weight: 600;
+  padding: 0.2rem 0.55rem;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+}
+
+.loan-badge--active {
+  background: #d4edda;
+  color: #1a5c2e;
+}
+
+.loan-badge--returned {
+  background: #e2e2e2;
+  color: #555;
+}
