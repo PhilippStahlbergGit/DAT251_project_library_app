@@ -1,6 +1,7 @@
 package app.main.LibraryApp.service;
 
 import java.security.Key;
+import java.time.Instant;
 import java.util.Date;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -38,6 +39,10 @@ public class JwtService {
     public boolean isTokenValid(String token, UserDetails userDetails) {
         String email = extractEmail(token);
         return email.equals(userDetails.getUsername()) && !isTokenExpired(token);
+    }
+
+    public Instant extractExpiration(String token) {
+        return extractClaims(token).getExpiration().toInstant();
     }
 
     private boolean isTokenExpired(String token) {
