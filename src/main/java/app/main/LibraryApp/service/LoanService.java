@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import app.main.LibraryApp.domain.BookCopy;
 import app.main.LibraryApp.domain.Loan;
@@ -27,6 +28,7 @@ public class LoanService {
         this.userService = userService;
     }
 
+    @Transactional
     public Loan createLoan(String borrowerEmail, LoanRequest request) {
         BookCopy bookCopy = bookCopyRepository.findById(request.getBookCopyId())
                 .orElseThrow(() -> new RuntimeException("Book copy not found"));
@@ -56,6 +58,7 @@ public class LoanService {
         return loanRepository.findByBorrowerId(borrower.getId());
     }
 
+    @Transactional
     public Loan returnLoan(String borrowerEmail, Long loanId) {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new RuntimeException("Loan not found"));
@@ -73,6 +76,7 @@ public class LoanService {
         return loanRepository.save(loan);
     }
 
+    @Transactional
     public void deleteLoan(String borrowerEmail, Long loanId) {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new RuntimeException("Loan not found"));

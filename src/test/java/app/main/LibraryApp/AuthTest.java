@@ -56,7 +56,7 @@ class AuthTest {
         String token = registerAndLogin("authtest@example.com", "Auth Test User", "password123").getToken();
 
         // Use the token to access a protected endpoint
-        mockMvc.perform(get("/api/users")
+        mockMvc.perform(get("/api/books")
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isOk());
     }
@@ -71,7 +71,7 @@ class AuthTest {
                 .andExpect(status().isOk());
 
         // Verify the blacklisted token is rejected on a protected endpoint
-        mockMvc.perform(get("/api/users")
+        mockMvc.perform(get("/api/books")
                 .header("Authorization", "Bearer " + token))
                 .andExpect(status().isUnauthorized());
     }
