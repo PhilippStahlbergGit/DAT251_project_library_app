@@ -28,5 +28,5 @@ public class Library {
     private User user;
 
     @OneToMany(mappedBy = "library", cascade = CascadeType.ALL, orphanRemoval = true)
-    private List<Book> books = new ArrayList<>();
+    private List<BookCopy> bookCopies = new ArrayList<>();
 }

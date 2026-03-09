@@ -73,7 +73,7 @@ class BookTest {
                 // fixed: author is a string, year matches entity field name
                 .content("{\"title\":\"Harry Potter\",\"author\":\"J. K. Rowling\",\"year\":1997}"))
                 .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.title").value("Harry Potter and the Philosopher's Stone"));
+                .andExpect(jsonPath("$.book.title").value("Harry Potter and the Philosopher's Stone"));
 
     }
 

@@ -1,6 +1,5 @@
 package app.main.LibraryApp.controller;
 
-import java.util.Collection;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
@@ -13,7 +12,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import app.main.LibraryApp.domain.Book;
+import app.main.LibraryApp.domain.BookCopy;
 import app.main.LibraryApp.domain.dto.BookRequest;
 import app.main.LibraryApp.service.BookService;
 
@@ -28,15 +27,14 @@ public class BookController {
     }
 
     @PostMapping
-    public ResponseEntity<Book> addBook(@RequestBody BookRequest book) {
-        Book addedBook = bookService.addBook(book, getCurrentUserEmail());
-        return ResponseEntity.created(null).body(addedBook);
+    public ResponseEntity<BookCopy> addBook(@RequestBody BookRequest book) {
+        BookCopy addedCopy = bookService.addBook(book, getCurrentUserEmail());
+        return ResponseEntity.status(201).body(addedCopy);
     }
 
     @GetMapping
-    public ResponseEntity<Collection<Book>> getAllBooks() {
-        Collection<Book> books = bookService.getAllBooks(getCurrentUserEmail());
-        return ResponseEntity.ok(books);
+    public ResponseEntity<List<BookCopy>> getAllBooks() {
+        return ResponseEntity.ok(bookService.getAllBooks(getCurrentUserEmail()));
     }
 
     @DeleteMapping("/{id}")
@@ -58,5 +56,4 @@ public class BookController {
     private String getCurrentUserEmail() {
         return SecurityContextHolder.getContext().getAuthentication().getName();
     }
-
 }

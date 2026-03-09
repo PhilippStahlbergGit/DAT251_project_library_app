@@ -43,7 +43,7 @@ public class LoanService {
         loan.setLoanDate(LocalDate.now());
         loan.setDueDate(request.getDueDate());
         loan.setLoanStatus(LoanStatus.ACTIVE);
-        loan.setLoanComment("'" + bookCopy.getTitle() + "' loaned to " + borrower.getName());
+        loan.setLoanComment("'" + bookCopy.getBook().getTitle() + "' loaned to " + borrower.getName());
 
         bookCopy.setAvailabilityStatus(AvailabilityStatus.LOANED);
         bookCopyRepository.save(bookCopy);
