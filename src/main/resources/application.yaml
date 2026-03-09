@@ -2,7 +2,7 @@ spring:
   application:
     name: LibraryApp
   datasource:
-    url: jdbc:postgresql://localhost:5432/librarydb
+    url: jdbc:postgresql://${DB_HOST:localhost}:5432/librarydb
     driver-class-name: org.postgresql.Driver
     username: ${DB_USERNAME:postgres}
     password: ${DB_PASSWORD:postgres}
