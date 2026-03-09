@@ -2,8 +2,10 @@ package app.main.LibraryApp.domain;
 
 import java.util.List;
 
-import app.main.LibraryApp.domain.enums.Genre;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import app.main.LibraryApp.domain.enums.Genre;
+import jakarta.persistence.ElementCollection;
 import jakarta.persistence.Entity;
 
 import jakarta.persistence.GeneratedValue;
@@ -24,6 +26,7 @@ public class Book {
     private Long id;
     private String isbn;
     private String title;
+    @ElementCollection
     private List<String> authors;
     private String publisher;
     private Integer publicationYear;
@@ -31,5 +34,6 @@ public class Book {
 
     @ManyToOne
     @JoinColumn(name = "library_id")
+    @JsonIgnore
     private Library library;
 }
