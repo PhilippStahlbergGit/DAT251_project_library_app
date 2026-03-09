@@ -102,10 +102,10 @@ export default function HomePage() {
         <div className="added-books">
           <h2>Recently Added</h2>
           <ul>
-            {books.map((book) => (
-              <li key={book.id}>
-                <strong>{book.title}</strong> — {book.author}
-                {book.year && ` (${book.year})`}
+            {books.map((copy) => (
+              <li key={copy.id}>
+                <strong>{copy.book?.title}</strong> — {copy.book?.authors?.[0]}
+                {copy.book?.publicationYear && ` (${copy.book.publicationYear})`}
               </li>
             ))}
           </ul>
