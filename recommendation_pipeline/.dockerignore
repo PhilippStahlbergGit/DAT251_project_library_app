@@ -1,0 +1,12 @@
+.git
+.gitignore
+.vscode
+
+build
+bin
+out
+
+.venv
+__pycache__
+tests/__pycache__
+.pytest_cache
