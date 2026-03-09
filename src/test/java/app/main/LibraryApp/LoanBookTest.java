@@ -1,77 +1,157 @@
 package app.main.LibraryApp;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
-import app.main.LibraryApp.domain.Loan;
-import app.main.LibraryApp.domain.enums.LoanStatus;
-import app.main.LibraryApp.service.LoanService;
+import app.main.LibraryApp.domain.BookCopy;
+import app.main.LibraryApp.domain.User;
+import app.main.LibraryApp.domain.enums.AvailabilityStatus;
+import app.main.LibraryApp.repository.BookCopyRepository;
+import app.main.LibraryApp.repository.UserRepository;
+import app.main.LibraryApp.service.LibraryService;
+import tools.jackson.databind.ObjectMapper;
 
+@SpringBootTest
+@AutoConfigureMockMvc
 class LoanBookTest {
-    @Test
-    void testCreateLoan() {
-        // test for creating a loan
-        
-        LoanService loanService = new LoanService();
-        Loan loan = loanService.createLoan("John Doe", "The Great Gatsby");
 
-        assertEquals("John Doe", loan.getBorrowerName());
-        assertEquals("The Great Gatsby", loan.getBookTitle());
-        assertEquals(LoanStatus.ACTIVE, loan.getLoanStatus());
+    private MockMvc mockMvc;
+
+    @Autowired
+    private WebApplicationContext context;
+
+    @Autowired
+    private UserRepository userRepository;
+
+    @Autowired
+    private LibraryService libraryService;
+
+    @Autowired
+    private BookCopyRepository bookCopyRepository;
+
+    private Long availableBookCopyId;
+
+    @BeforeEach
+    void setup() {
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(context)
+                .apply(springSecurity())
+                .build();
+
+        if (userRepository.findByEmail("lender@test.com").isEmpty()) {
+            User lender = new User();
+            lender.setName("Lender");
+            lender.setEmail("lender@test.com");
+            lender.setPassword("password");
+            userRepository.save(lender);
+            libraryService.createLibrary(lender);
+        }
+
+        if (userRepository.findByEmail("borrower@test.com").isEmpty()) {
+            User borrower = new User();
+            borrower.setName("Borrower");
+            borrower.setEmail("borrower@test.com");
+            borrower.setPassword("password");
+            userRepository.save(borrower);
+            libraryService.createLibrary(borrower);
+        }
+
+        // Create an available BookCopy in the lender's library for each test
+        BookCopy copy = new BookCopy();
+        copy.setTitle("Test Book");
+        copy.setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
+        copy.setLibrary(libraryService.getLibraryByEmail("lender@test.com"));
+        availableBookCopyId = bookCopyRepository.save(copy).getId();
     }
 
-    // @Test
-    // void testReturnLoan() {
-    //     // test for returning a loan
-        
-    //     LoanService loanService = new LoanService();
-    //     Loan loan = loanService.createLoan("John Doe", "The Great Gatsby");
-    //     loanService.setStatus(loan, LoanStatus.RETURNED);
-
-    //     assertEquals(LoanStatus.RETURNED, loan.getLoanStatus());
-    // }
-
-    // @Test
-    // void testOverdueLoan() {
-    //     // test for marking a loan as overdue
-        
-    //     LoanService loanService = new LoanService();
-    //     Loan loan = loanService.createLoan("John Doe", "The Great Gatsby");
-    //     loanService.setStatus(loan, LoanStatus.OVERDUE);
-
-    //     assertEquals(LoanStatus.OVERDUE, loan.getLoanStatus());
-    // }
-
-    // @Test
-    // void testCancelLoan() {
-    //     // test for canceling a loan
-        
-    //     LoanService loanService = new LoanService();
-    //     Loan loan = loanService.createLoan("John Doe", "The Great Gatsby");
-    //     loanService.setStatus(loan, LoanStatus.CANCELED);
-
-    //     assertEquals(LoanStatus.CANCELED, loan.getLoanStatus());
-    // }
-
-    // @Test
-    // void testDeleteLoan() {
-    //     // test for deleting a loan
-        
-    //     LoanService loanService = new LoanService();
-    //     Loan loan = loanService.createLoan("John Doe", "The Great Gatsby");
-    //     loanService.deleteLoan(loan.getId());
-
-    //     assertEquals(LoanStatus.DELETED, loan.getLoanStatus());
-    // }
+    @Test
+    @WithMockUser(username = "borrower@test.com")
+    void shouldCreateLoan() throws Exception {
+        mockMvc.perform(post("/api/loans")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + "}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.loanStatus").value("ACTIVE"))
+                .andExpect(jsonPath("$.borrower.email").value("borrower@test.com"));
+    }
 
     @Test
-    void getAllLoans() {
-        // test for retrieving all loans from the library
-        
-        LoanService loanService = new LoanService();
-        loanService.createLoan("John Doe", "The Great Gatsby");
-        loanService.createLoan("Jane Smith", "To Kill a Mockingbird");
+    @WithMockUser(username = "borrower@test.com")
+    void shouldReturnLoan() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/loans")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + "}"))
+                .andExpect(status().isCreated())
+                .andReturn();
 
-        assertEquals(2, loanService.getAllLoans().size());
+        Long loanId = new ObjectMapper().readTree(result.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(patch("/api/loans/" + loanId + "/return"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loanStatus").value("RETURNED"));
+    }
+
+    @Test
+    @WithMockUser(username = "borrower@test.com")
+    void shouldNotBorrowUnavailableBookCopy() throws Exception {
+        // First loan — makes it LOANED
+        mockMvc.perform(post("/api/loans")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + "}"))
+                .andExpect(status().isCreated());
+
+        // Second loan on same copy — should fail with 409 Conflict
+        mockMvc.perform(post("/api/loans")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + "}"))
+                .andExpect(status().isConflict());
+    }
+
+    @Test
+    void shouldNotReturnSomeoneElsesLoan() throws Exception {
+        // borrower@test.com creates the loan
+        MvcResult result = mockMvc.perform(post("/api/loans")
+                .with(user("borrower@test.com"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + "}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long loanId = new ObjectMapper().readTree(result.getResponse().getContentAsString()).get("id").asLong();
+
+        // lender@test.com tries to return it — should be forbidden
+        mockMvc.perform(patch("/api/loans/" + loanId + "/return")
+                .with(user("lender@test.com")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "borrower@test.com")
+    void shouldGetAllLoans() throws Exception {
+        mockMvc.perform(post("/api/loans")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + "}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/loans"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray());
     }
 }
