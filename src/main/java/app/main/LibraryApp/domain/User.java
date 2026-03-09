@@ -2,12 +2,13 @@ package app.main.LibraryApp.domain;
 
 import java.time.LocalDate;
 
+import jakarta.persistence.CascadeType;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
-import jakarta.persistence.Transient;
 import lombok.Data;
 
 @Data
@@ -20,8 +21,10 @@ public class User {
     private String name;
     private String profileInfo;
     private LocalDate registrationDate;
-    @Transient
+
+    @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
     private Library library;
+
     private String email;
     private String password;
 

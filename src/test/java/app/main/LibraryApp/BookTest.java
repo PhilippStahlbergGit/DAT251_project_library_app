@@ -1,97 +1,116 @@
 package app.main.LibraryApp;
 
-import java.util.List;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
+import org.springframework.web.context.WebApplicationContext;
 
-import app.main.LibraryApp.domain.Book;
-import app.main.LibraryApp.repository.BookRepository;
-import app.main.LibraryApp.service.BookService;
+import app.main.LibraryApp.domain.User;
+import app.main.LibraryApp.repository.UserRepository;
+import app.main.LibraryApp.service.LibraryService;
+import tools.jackson.databind.ObjectMapper;
 
+@SpringBootTest
+@AutoConfigureMockMvc
 class BookTest {
-    @Test
-    void testAddBook() {
-        // test for adding a book to the library
 
-        BookRepository bookRepository = mock(BookRepository.class);
-        BookService bookService = new BookService(null, bookRepository);
+    private MockMvc mockMvc;
 
-        Book book = new Book();
-        book.setTitle("1984");
-        book.setAuthors(List.of("George Orwell"));
-        book.setIsbn("978-0451524935");
+    @Autowired
+    private UserRepository userRepository;
 
-        when(bookRepository.save(book)).thenReturn(book);
-        Book addedBook = bookService.addBook(book);
+    @Autowired
+    private LibraryService libraryService;
 
-        assertEquals("1984", addedBook.getTitle());
-        assertEquals(List.of("George Orwell"), addedBook.getAuthors());
-        assertEquals("978-0451524935", addedBook.getIsbn());
-        verify(bookRepository).save(book);
+    @Autowired
+    private WebApplicationContext context;
+
+    @BeforeEach
+    void setup() {
+        mockMvc = MockMvcBuilders
+                .webAppContextSetup(context)
+                .apply(springSecurity())
+                .build();
+
+        if (userRepository.findByEmail("test@test.com").isEmpty()) {
+            User user = new User();
+            user.setName("Test User");
+            user.setEmail("test@test.com");
+            user.setPassword("password");
+            userRepository.save(user);
+            libraryService.createLibrary(user);
+        }
+
+        if (userRepository.findByEmail("other@test.com").isEmpty()) {
+            User otherUser = new User();
+            otherUser.setName("Other User");
+            otherUser.setEmail("other@test.com");
+            otherUser.setPassword("password");
+            userRepository.save(otherUser);
+            libraryService.createLibrary(otherUser);
+        }
     }
 
     @Test
-    void testGetAllBooks() {
-        // test for retrieving all books from the library
+    @WithMockUser(username = "test@test.com")
+    void shouldAddBook() throws Exception {
+        mockMvc.perform(post("/api/books")
+                .contentType(MediaType.APPLICATION_JSON)
+                // fixed: author is a string, year matches entity field name
+                .content("{\"title\":\"Harry Potter\",\"author\":\"J. K. Rowling\",\"year\":1997}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title").value("Harry Potter and the Philosopher's Stone"));
 
-        BookRepository bookRepository = mock(BookRepository.class);
-        BookService bookService = new BookService(null, bookRepository);
-
-        Book book1 = new Book();
-        book1.setTitle("The Catcher in the Rye");
-        book1.setAuthors(List.of("J.D. Salinger"));
-        book1.setIsbn("978-0316769488");
-
-        Book book2 = new Book();
-        book2.setTitle("Pride and Prejudice");
-        book2.setAuthors(List.of("Jane Austen"));
-        book2.setIsbn("978-1503290563");
-
-        when(bookRepository.findAll()).thenReturn(List.of(book1, book2));
-        List<Book> books = bookService.getAllBooks();
-
-        assertEquals(2, books.size());
-        assertEquals("The Catcher in the Rye", books.get(0).getTitle());
-        assertEquals("Pride and Prejudice", books.get(1).getTitle());
-        verify(bookRepository).findAll();
     }
 
     @Test
-    void testDeleteBook() {
-        // test for deleting a book from the library
+    @WithMockUser(username = "test@test.com")
+    void shouldDeleteBook() throws Exception {
+        String response = mockMvc.perform(post("/api/books")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Harry Potter\",\"author\":\"J. K. Rowling\",\"year\":1997}"))
+                .andExpect(status().isCreated())
+                .andReturn()
+                .getResponse()
+                .getContentAsString();
 
-        BookRepository bookRepository = mock(BookRepository.class);
-        BookService bookService = new BookService(null, bookRepository);
+        Long bookId = new ObjectMapper().readTree(response).get("id").asLong();
 
-        Long bookId = 1L;
-        when(bookRepository.existsById(bookId)).thenReturn(true);
-        boolean result = bookService.deleteBook(bookId);
-
-        assertTrue(result);
-        verify(bookRepository).existsById(bookId);
-        verify(bookRepository).deleteById(bookId);
+        mockMvc.perform(delete("/api/books/" + bookId))
+                .andExpect(status().isOk());
     }
 
     @Test
-    void testDeleteBookNotFound() {
-        // test for deleting a book that does not exist in the library
+    @WithMockUser(username = "test@test.com")
+    void shouldNotDeleteBookBelongingToAnotherUser() throws Exception {
+        // add a book as other@test.com using user() post processor
+        MvcResult result = mockMvc.perform(post("/api/books")
+                .with(user("other@test.com")) // fixed: override mock user for this request only
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"title\":\"Other Book\",\"author\":\"Other Author\",\"year\":2000}"))
+                .andExpect(status().isCreated())
+                .andReturn();
 
-        BookRepository bookRepository = mock(BookRepository.class);
-        BookService bookService = new BookService(null, bookRepository);
+        Long bookId = new ObjectMapper()
+                .readTree(result.getResponse().getContentAsString())
+                .get("id").asLong();
 
-        Long bookId = 2L;
-        when(bookRepository.existsById(bookId)).thenReturn(false);
-        boolean result = bookService.deleteBook(bookId);
-
-        assertFalse(result);
-        verify(bookRepository).existsById(bookId);
-        verify(bookRepository, never()).deleteById(bookId);
+        // test@test.com should not be able to delete other@test.com's book
+        mockMvc.perform(delete("/api/books/" + bookId))
+                .andExpect(status().isForbidden());
     }
 }
