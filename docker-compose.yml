@@ -6,8 +6,23 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8080:8080"
+    environment:
+      - DB_USERNAME=postgres
+      - DB_PASSWORD=postgres
     depends_on:
+      - db
       - recommendation
+
+  db:
+    image: postgres:16
+    ports:
+      - "5432:5432"
+    environment:
+      POSTGRES_DB: librarydb
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
 
   recommendation:
     build:
@@ -15,3 +30,6 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+
+volumes:
+  postgres_data:
