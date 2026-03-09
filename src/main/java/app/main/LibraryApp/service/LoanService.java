@@ -1,52 +1,91 @@
 package app.main.LibraryApp.service;
 
-import java.util.ArrayList;
+import java.time.LocalDate;
 import java.util.List;
 
 import org.springframework.stereotype.Service;
 
+import app.main.LibraryApp.domain.BookCopy;
 import app.main.LibraryApp.domain.Loan;
+import app.main.LibraryApp.domain.User;
+import app.main.LibraryApp.domain.enums.AvailabilityStatus;
 import app.main.LibraryApp.domain.enums.LoanStatus;
+import app.main.LibraryApp.domain.dto.LoanRequest;
+import app.main.LibraryApp.repository.BookCopyRepository;
+import app.main.LibraryApp.repository.LoanRepository;
 
 @Service
 public class LoanService {
-    // TODO: implement set loan status method
-    
-    private List<Loan> loans;
 
-    public LoanService() {
-        this.loans = new ArrayList<>();
+    private final LoanRepository loanRepository;
+    private final BookCopyRepository bookCopyRepository;
+    private final UserService userService;
+
+    public LoanService(LoanRepository loanRepository, BookCopyRepository bookCopyRepository, UserService userService) {
+        this.loanRepository = loanRepository;
+        this.bookCopyRepository = bookCopyRepository;
+        this.userService = userService;
     }
 
-    public Loan createLoan(String borrowerName, String bookTitle) {
+    public Loan createLoan(String borrowerEmail, LoanRequest request) {
+        BookCopy bookCopy = bookCopyRepository.findById(request.getBookCopyId())
+                .orElseThrow(() -> new RuntimeException("Book copy not found"));
+
+        if (bookCopy.getAvailabilityStatus() != AvailabilityStatus.AVAILABLE) {
+            throw new RuntimeException("Book copy is not available");
+        }
+
+        User borrower = userService.getUserByEmail(borrowerEmail);
 
         Loan loan = new Loan();
+        loan.setBookCopy(bookCopy);
+        loan.setBorrower(borrower);
+        loan.setLoanDate(LocalDate.now());
+        loan.setDueDate(request.getDueDate());
         loan.setLoanStatus(LoanStatus.ACTIVE);
-        loan.setBorrowerName(borrowerName);
-        loan.setBookTitle(bookTitle);
-        loan.setLoanComment("The book " + bookTitle + " is loaned to " + borrowerName);
-        
-        this.loans.add(loan);
-        return loan;
+        loan.setLoanComment("'" + bookCopy.getTitle() + "' loaned to " + borrower.getName());
+
+        bookCopy.setAvailabilityStatus(AvailabilityStatus.LOANED);
+        bookCopyRepository.save(bookCopy);
+
+        return loanRepository.save(loan);
     }
 
-
-    public void deleteLoan(Long loanID) {
-        // TODO: implement deleteLoan method
-        // Need loanId for this method
-        // find the loan by ID and set its status to DELETED
+    public List<Loan> getAllLoans(String borrowerEmail) {
+        User borrower = userService.getUserByEmail(borrowerEmail);
+        return loanRepository.findByBorrowerId(borrower.getId());
     }
 
-    public List<Loan> getAllLoans() {
-        return this.loans;
+    public Loan returnLoan(String borrowerEmail, Long loanId) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new RuntimeException("Loan not found"));
+
+        if (!loan.getBorrower().getEmail().equals(borrowerEmail)) {
+            throw new RuntimeException("Unauthorized");
+        }
+
+        loan.setReturnDate(LocalDate.now());
+        loan.setLoanStatus(LoanStatus.RETURNED);
+
+        loan.getBookCopy().setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
+        bookCopyRepository.save(loan.getBookCopy());
+
+        return loanRepository.save(loan);
     }
 
+    public void deleteLoan(String borrowerEmail, Long loanId) {
+        Loan loan = loanRepository.findById(loanId)
+                .orElseThrow(() -> new RuntimeException("Loan not found"));
 
+        if (!loan.getBorrower().getEmail().equals(borrowerEmail)) {
+            throw new RuntimeException("Unauthorized");
+        }
 
+        if (loan.getLoanStatus() == LoanStatus.ACTIVE) {
+            loan.getBookCopy().setAvailabilityStatus(AvailabilityStatus.AVAILABLE);
+            bookCopyRepository.save(loan.getBookCopy());
+        }
 
-
-
-
-
-
+        loanRepository.delete(loan);
+    }
 }
