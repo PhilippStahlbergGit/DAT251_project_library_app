@@ -3,16 +3,13 @@ package app.main.LibraryApp.service;
 import app.main.LibraryApp.domain.dto.LoginRequest;
 import app.main.LibraryApp.domain.dto.RegisterRequest;
 import app.main.LibraryApp.domain.dto.UserResponse;
-import app.main.LibraryApp.repository.LibraryRepository;
+import app.main.LibraryApp.domain.User;
 import app.main.LibraryApp.repository.UserRepository;
 
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
-
-import app.main.LibraryApp.domain.Library;
-import app.main.LibraryApp.domain.User;
 
 @Service
 public class AuthService {
@@ -22,10 +19,12 @@ public class AuthService {
     private final TokenBlacklistService tokenBlacklistService;
     private final LibraryService libraryService;
     private final UserService userService;
+    private final UserRepository userRepository;
 
     public AuthService(PasswordEncoder passwordEncoder,
             AuthenticationManager authenticationManager, JwtService jwtService,
-            TokenBlacklistService tokenBlacklistService, LibraryService libraryService, UserService userService) {
+            TokenBlacklistService tokenBlacklistService, LibraryService libraryService,
+            UserService userService, UserRepository userRepository) {
 
         this.passwordEncoder = passwordEncoder;
         this.authenticationManager = authenticationManager;
@@ -33,22 +32,12 @@ public class AuthService {
         this.tokenBlacklistService = tokenBlacklistService;
         this.libraryService = libraryService;
         this.userService = userService;
+        this.userRepository = userRepository;
     }
 
     public void register(RegisterRequest request) {
-        System.out.println("Registering user: " + request.getName() + ", " + request.getEmail());
-        try {
-            System.out.println("Checking if user exists...");
-            User existingUser = userService.getUserByEmail(request.getEmail());
-            if (existingUser != null) {
-                System.out.println("User with email " + request.getEmail() + " already exists");
-                throw new RuntimeException("User with this email exists");
-            }
-        } catch (RuntimeException e) {
-            // If the exception is "User not found", we can ignore it
-            if (!e.getMessage().equals("User not found")) {
-                throw e;
-            }
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("User with this email exists");
         }
         User user = userService.addUser(request);
         libraryService.createLibrary(user);
