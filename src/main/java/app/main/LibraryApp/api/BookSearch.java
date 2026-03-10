@@ -13,6 +13,7 @@ import java.util.List;
 import org.springframework.stereotype.Service;
 
 import app.main.LibraryApp.domain.Book;
+import app.main.LibraryApp.domain.dto.BookSuggestion;
 import app.main.LibraryApp.domain.enums.Genre;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
@@ -95,6 +96,63 @@ public class BookSearch {
         }
         return book;
 
+    }
+
+    public List<BookSuggestion> searchSuggestions(String title) {
+        try {
+            HttpClient client = HttpClient.newHttpClient();
+
+            String query = URLEncoder.encode(title, StandardCharsets.UTF_8);
+            String url = "https://openlibrary.org/search.json"
+                    + "?title=" + query
+                    + "&language=eng"
+                    + "&limit=7"
+                    + "&fields=title,author_name,first_publish_year,isbn,publisher,subject";
+
+            HttpRequest request = HttpRequest.newBuilder()
+                    .uri(URI.create(url))
+                    .header("User-Agent", "MyLibraryApp")
+                    .GET()
+                    .build();
+
+            HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
+
+            ObjectMapper mapper = new ObjectMapper();
+            JsonNode root = mapper.readTree(response.body());
+            JsonNode docs = root.get("docs");
+
+            List<BookSuggestion> suggestions = new ArrayList<>();
+            if (docs == null || !docs.isArray()) return suggestions;
+
+            for (JsonNode doc : docs) {
+                BookSuggestion s = new BookSuggestion();
+                s.setTitle(doc.path("title").asText("N/A"));
+
+                List<String> authors = new ArrayList<>();
+                JsonNode authorNode = doc.path("author_name");
+                if (authorNode.isArray()) {
+                    for (JsonNode a : authorNode) authors.add(a.asText());
+                }
+                s.setAuthors(authors);
+
+                s.setYear(doc.path("first_publish_year").asInt(0));
+                s.setIsbn(doc.path("isbn").path(0).asText("N/A"));
+                s.setPublisher(doc.path("publisher").path(0).asText("N/A"));
+
+                List<String> subjects = new ArrayList<>();
+                JsonNode subjectNode = doc.path("subject");
+                if (subjectNode.isArray()) {
+                    for (JsonNode n : subjectNode) subjects.add(n.asText(""));
+                }
+                s.setGenre(mapSubjectToGenre(subjects).name());
+
+                suggestions.add(s);
+            }
+            return suggestions;
+
+        } catch (IOException | InterruptedException e) {
+            throw new RuntimeException("Failed to fetch book suggestions from API", e);
+        }
     }
 
     private Genre mapSubjectToGenre(List<String> subjects) {

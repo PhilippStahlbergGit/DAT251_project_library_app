@@ -10,10 +10,13 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
+import app.main.LibraryApp.api.BookSearch;
 import app.main.LibraryApp.domain.BookCopy;
 import app.main.LibraryApp.domain.dto.BookRequest;
+import app.main.LibraryApp.domain.dto.BookSuggestion;
 import app.main.LibraryApp.service.BookService;
 
 @RestController
@@ -21,9 +24,17 @@ import app.main.LibraryApp.service.BookService;
 public class BookController {
 
     private final BookService bookService;
+    private final BookSearch bookSearch;
 
-    public BookController(BookService bookService) {
+    public BookController(BookService bookService, BookSearch bookSearch) {
         this.bookService = bookService;
+        this.bookSearch = bookSearch;
+    }
+
+    @GetMapping("/search")
+    public ResponseEntity<List<BookSuggestion>> searchBooks(@RequestParam String q) {
+        if (q == null || q.isBlank()) return ResponseEntity.ok(List.of());
+        return ResponseEntity.ok(bookSearch.searchSuggestions(q));
     }
 
     @PostMapping

@@ -8,6 +8,7 @@ import app.main.LibraryApp.domain.BookCopy;
 import app.main.LibraryApp.domain.Library;
 import app.main.LibraryApp.domain.dto.BookRequest;
 import app.main.LibraryApp.domain.enums.AvailabilityStatus;
+import app.main.LibraryApp.domain.enums.Genre;
 import app.main.LibraryApp.repository.BookCopyRepository;
 import app.main.LibraryApp.repository.BookRepository;
 import app.main.LibraryApp.repository.LoanRepository;
@@ -37,10 +38,28 @@ public class BookService {
     @Transactional
     public BookCopy addBook(BookRequest bookRequest, String email) {
         Book newBook = new Book();
-        newBook.setTitle(bookRequest.getTitle());
-        newBook.setAuthors(List.of(bookRequest.getAuthor()));
-        newBook.setPublicationYear(bookRequest.getYear());
-        newBook = bookSearch.completeBookInfo(newBook);
+        if (bookRequest.getIsbn() != null && !bookRequest.getIsbn().isBlank()
+                && !"N/A".equals(bookRequest.getIsbn())) {
+            // Suggestion was selected — use the pre-fetched data directly
+            newBook.setTitle(bookRequest.getTitle());
+            newBook.setAuthors(bookRequest.getAuthor() != null
+                    ? List.of(bookRequest.getAuthor()) : List.of("N/A"));
+            newBook.setPublicationYear(bookRequest.getYear() != null ? bookRequest.getYear() : 0);
+            newBook.setIsbn(bookRequest.getIsbn());
+            newBook.setPublisher(bookRequest.getPublisher() != null ? bookRequest.getPublisher() : "N/A");
+            try {
+                newBook.setGenre(bookRequest.getGenre() != null
+                        ? Genre.valueOf(bookRequest.getGenre()) : Genre.UNKNOWN);
+            } catch (IllegalArgumentException e) {
+                newBook.setGenre(Genre.UNKNOWN);
+            }
+        } else {
+            // No isbn — fall back to OpenLibrary lookup
+            newBook.setTitle(bookRequest.getTitle());
+            newBook.setAuthors(List.of(bookRequest.getAuthor() != null ? bookRequest.getAuthor() : ""));
+            newBook.setPublicationYear(bookRequest.getYear() != null ? bookRequest.getYear() : 0);
+            newBook = bookSearch.completeBookInfo(newBook);
+        }
         bookRepository.save(newBook);
 
         Library library = libraryService.getLibraryByEmail(email);
