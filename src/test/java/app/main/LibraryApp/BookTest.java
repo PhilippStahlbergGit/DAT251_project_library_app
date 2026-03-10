@@ -3,6 +3,7 @@ package app.main.LibraryApp;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -112,5 +113,17 @@ class BookTest {
         // test@test.com should not be able to delete other@test.com's book
         mockMvc.perform(delete("/api/books/" + bookId))
                 .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "test@test.com")
+    void shouldReturnSuggestionsFromOpenLibrary() throws Exception {
+        mockMvc.perform(get("/api/books/search?q=harry+potter"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[0].title").exists())
+                .andExpect(jsonPath("$[0].authors").isArray())
+                .andExpect(jsonPath("$[0].year").exists())
+                .andExpect(jsonPath("$[0].isbn").exists());
     }
 }

@@ -1,13 +1,15 @@
 package app.main.LibraryApp.domain.dto;
 
+import java.util.List;
+
 import lombok.Data;
 
 @Data
-public class BookRequest {
+public class BookSuggestion {
 
     private String title;
-    private String author;
-    private Integer year;
+    private List<String> authors;
+    private int year;
     private String isbn;
     private String publisher;
     private String genre;

@@ -12,14 +12,21 @@ export function BookProvider({ children }) {
       setBooks([]); // clear books on logout
     }
   }, [isAuthenticated]);
-  const addBook = async ({ title, author, year }) => {
+  const addBook = async ({ title, author, year, isbn, publisher, genre }) => {
     const res = await authFetch("/api/books", {
       method: "POST",
-      body: JSON.stringify({ title, author, year }),
+      body: JSON.stringify({ title, author, year, isbn, publisher, genre }),
     });
     if (!res.ok) throw new Error(await res.text());
     const newBook = await res.json();
     setBooks((prev) => [...prev, newBook]);
+  };
+
+  const searchBooks = async (query) => {
+    if (!query || query.trim().length < 2) return [];
+    const res = await authFetch(`/api/books/search?q=${encodeURIComponent(query.trim())}`);
+    if (!res.ok) return [];
+    return res.json();
   };
   const fetchBooks = async () => {
     const res = await authFetch("/api/books");
@@ -33,7 +40,7 @@ export function BookProvider({ children }) {
     setBooks((prev) => prev.filter((book) => book.id !== id));
   };
   const value = useMemo(
-    () => ({ books, addBook, fetchBooks, deleteBook }),
+    () => ({ books, addBook, fetchBooks, deleteBook, searchBooks }),
     [books]
   );
   return <BookContext.Provider value={value}>{children}</BookContext.Provider>;
