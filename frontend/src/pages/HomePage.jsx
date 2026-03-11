@@ -26,8 +26,7 @@ export default function HomePage() {
       clearRecommendations();
       return;
     }
-    const ownedBookIds = books.map((b) => Number(b.id)).filter(Number.isFinite);
-    fetchRecommendations(ownedBookIds, 10);
+    fetchRecommendations(books, 10);
   }, [isAuthenticated, books, fetchRecommendations, clearRecommendations]);
 
   const { joke, loadingJoke, jokeError, fetchJoke } = useJoke();
