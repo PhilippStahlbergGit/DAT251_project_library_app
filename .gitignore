@@ -39,6 +39,7 @@ out/
 # Python env
 .venv/
 .env/
+.env
 
 # python cache
 __pycache__/
