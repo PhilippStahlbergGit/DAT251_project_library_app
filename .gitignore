@@ -36,9 +36,12 @@ out/
 ### VS Code ###
 .vscode/
 
+### Claude Code ###
+.claude/
+
 # Python env
 .venv/
-.env/
+.env
 
 # python cache
 __pycache__/
