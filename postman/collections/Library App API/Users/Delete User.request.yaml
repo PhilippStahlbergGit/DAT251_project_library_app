@@ -1,0 +1,14 @@
+$kind: http-request
+method: DELETE
+url: '{{baseUrl}}/api/users/{{userId}}'
+order: 3000
+scripts:
+  - type: afterResponse
+    language: text/javascript
+    code: |-
+      pm.test("Status code is 200", function () {
+          pm.expect(pm.response.code).to.eql(200);
+      });
+      pm.test("Response body contains 'User deleted'", function () {
+          pm.expect(pm.response.text()).to.include("User deleted");
+      });

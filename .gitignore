@@ -35,3 +35,18 @@ out/
 
 ### VS Code ###
 .vscode/
+
+# Python env
+.venv/
+.env/
+
+# python cache
+__pycache__/
+
+/frontend/node_modules
+
+# gradle properties
+gradle.properties
+
+# http
+*.http

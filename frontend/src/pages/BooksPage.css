@@ -1,0 +1,189 @@
+.books-empty {
+  color: #5b4a3b;
+  font-style: italic;
+  margin-top: 1rem;
+}
+
+.books-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+  gap: 1rem;
+  margin-top: 1.2rem;
+}
+
+.book-card {
+  background: #fbf6ed;
+  border: 1px solid #d8c7ad;
+  border-radius: 12px;
+  padding: 1.2rem;
+  box-shadow: 0 4px 14px rgba(52, 34, 24, 0.06);
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+}
+
+.book-title {
+  margin: 0;
+  color: #2a1f17;
+  font-size: 1.1rem;
+}
+
+.book-author {
+  margin: 0;
+  color: #5b4a3b;
+  font-size: 0.9rem;
+}
+
+.book-year {
+  margin: 0;
+  color: #8a7562;
+  font-size: 0.85rem;
+}
+
+.book-delete {
+  margin-top: auto;
+  padding: 0.4rem 0.6rem;
+  background: transparent;
+  color: #a63232;
+  border: 1px solid #d4a0a0;
+  border-radius: 8px;
+  font-size: 0.8rem;
+  cursor: pointer;
+  transition: 0.2s ease;
+  align-self: flex-start;
+}
+
+.book-delete:hover:not(:disabled) {
+  background: #a63232;
+  color: #fff;
+  border-color: #a63232;
+}
+
+.book-delete:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.book-card-top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 0.4rem;
+}
+
+.book-status {
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 0.15rem 0.5rem;
+  border-radius: 20px;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  flex-shrink: 0;
+  margin-top: 0.2rem;
+}
+
+.status--available {
+  background: #d4edda;
+  color: #1a5c2e;
+}
+
+.status--loaned {
+  background: #fde8cc;
+  color: #7a4000;
+}
+
+.status--reserved {
+  background: #e0e8ff;
+  color: #2a3da0;
+}
+
+.book-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-top: auto;
+}
+
+.book-lend-btn {
+  font-size: 0.82rem;
+  color: var(--wood);
+  background: transparent;
+  border: 1px solid var(--wood);
+  border-radius: 8px;
+  padding: 0.3rem 0.65rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: 0.18s ease;
+}
+
+.book-lend-btn:hover {
+  background: var(--wood);
+  color: #fff7ea;
+}
+
+/* Inline lend form */
+.lend-form {
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+  margin-top: 0.5rem;
+}
+
+.lend-form input {
+  padding: 0.45rem 0.65rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.88rem;
+  color: var(--ink);
+  background: var(--card);
+  outline: none;
+}
+
+.lend-form input:focus {
+  border-color: var(--wood);
+}
+
+.lend-form-actions {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.lend-confirm-btn {
+  padding: 0.35rem 0.75rem;
+  background: var(--wood);
+  color: #fff7ea;
+  border: none;
+  border-radius: 8px;
+  font-size: 0.82rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.lend-confirm-btn:hover:not(:disabled) {
+  background: var(--wood-dark);
+}
+
+.lend-confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lend-cancel-btn {
+  padding: 0.35rem 0.65rem;
+  background: transparent;
+  color: var(--muted-ink);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 0.82rem;
+  cursor: pointer;
+}
+
+.lend-cancel-btn:hover {
+  border-color: var(--muted-ink);
+}
+
+.lend-error {
+  font-size: 0.82rem;
+  color: #a63232;
+  margin: 0;
+}
