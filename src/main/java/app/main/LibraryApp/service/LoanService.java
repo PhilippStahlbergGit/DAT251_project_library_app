@@ -37,25 +37,33 @@ public class LoanService {
             throw new RuntimeException("Book copy is not available");
         }
 
-        User borrower;
-        if (request.getBorrowerEmail() != null && !request.getBorrowerEmail().isBlank()) {
-            // Owner is lending to someone else — verify the book belongs to the requester
-            if (!bookCopy.getLibrary().getUser().getEmail().equals(requesterEmail)) {
-                throw new RuntimeException("Unauthorized: book copy does not belong to your library");
-            }
-            borrower = userService.getUserByEmail(request.getBorrowerEmail());
-        } else {
-            // Requester is borrowing someone else's book
-            borrower = userService.getUserByEmail(requesterEmail);
-        }
-
         Loan loan = new Loan();
         loan.setBookCopy(bookCopy);
-        loan.setBorrower(borrower);
         loan.setLoanDate(LocalDate.now());
         loan.setDueDate(request.getDueDate());
         loan.setLoanStatus(LoanStatus.ACTIVE);
-        loan.setLoanComment("'" + bookCopy.getBook().getTitle() + "' loaned to " + borrower.getName());
+
+        if (request.getGuestBorrowerName() != null && !request.getGuestBorrowerName().isBlank()) {
+            // Owner is lending to a guest — no account required
+            if (!bookCopy.getLibrary().getUser().getEmail().equals(requesterEmail)) {
+                throw new RuntimeException("Unauthorized: book copy does not belong to your library");
+            }
+            loan.setGuestBorrowerName(request.getGuestBorrowerName());
+            loan.setLoanComment("'" + bookCopy.getBook().getTitle() + "' loaned to " + request.getGuestBorrowerName());
+        } else if (request.getBorrowerEmail() != null && !request.getBorrowerEmail().isBlank()) {
+            // Owner is lending to a registered user
+            if (!bookCopy.getLibrary().getUser().getEmail().equals(requesterEmail)) {
+                throw new RuntimeException("Unauthorized: book copy does not belong to your library");
+            }
+            User borrower = userService.getUserByEmail(request.getBorrowerEmail());
+            loan.setBorrower(borrower);
+            loan.setLoanComment("'" + bookCopy.getBook().getTitle() + "' loaned to " + borrower.getName());
+        } else {
+            // Requester is borrowing someone else's book
+            User borrower = userService.getUserByEmail(requesterEmail);
+            loan.setBorrower(borrower);
+            loan.setLoanComment("'" + bookCopy.getBook().getTitle() + "' loaned to " + borrower.getName());
+        }
 
         bookCopy.setAvailabilityStatus(AvailabilityStatus.LOANED);
         bookCopyRepository.save(bookCopy);
@@ -68,13 +76,25 @@ public class LoanService {
         return loanRepository.findByBorrowerId(borrower.getId());
     }
 
+    public List<Loan> getLentLoans(String ownerEmail) {
+        User owner = userService.getUserByEmail(ownerEmail);
+        return loanRepository.findByBookCopyLibraryUserId(owner.getId());
+    }
+
     @Transactional
-    public Loan returnLoan(String borrowerEmail, Long loanId) {
+    public Loan returnLoan(String requesterEmail, Long loanId) {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new RuntimeException("Loan not found"));
 
-        if (!loan.getBorrower().getEmail().equals(borrowerEmail)) {
-            throw new RuntimeException("Unauthorized");
+        if (loan.getBorrower() != null) {
+            if (!loan.getBorrower().getEmail().equals(requesterEmail)) {
+                throw new RuntimeException("Unauthorized");
+            }
+        } else {
+            // Guest loan — only the book copy owner can mark it returned
+            if (!loan.getBookCopy().getLibrary().getUser().getEmail().equals(requesterEmail)) {
+                throw new RuntimeException("Unauthorized");
+            }
         }
 
         loan.setReturnDate(LocalDate.now());
@@ -87,12 +107,19 @@ public class LoanService {
     }
 
     @Transactional
-    public void deleteLoan(String borrowerEmail, Long loanId) {
+    public void deleteLoan(String requesterEmail, Long loanId) {
         Loan loan = loanRepository.findById(loanId)
                 .orElseThrow(() -> new RuntimeException("Loan not found"));
 
-        if (!loan.getBorrower().getEmail().equals(borrowerEmail)) {
-            throw new RuntimeException("Unauthorized");
+        if (loan.getBorrower() != null) {
+            if (!loan.getBorrower().getEmail().equals(requesterEmail)) {
+                throw new RuntimeException("Unauthorized");
+            }
+        } else {
+            // Guest loan — only the book copy owner can delete it
+            if (!loan.getBookCopy().getLibrary().getUser().getEmail().equals(requesterEmail)) {
+                throw new RuntimeException("Unauthorized");
+            }
         }
 
         if (loan.getLoanStatus() == LoanStatus.ACTIVE) {

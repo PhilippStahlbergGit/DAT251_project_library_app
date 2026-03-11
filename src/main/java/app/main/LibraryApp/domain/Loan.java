@@ -28,6 +28,9 @@ public class Loan {
     @JoinColumn(name = "borrower_id")
     private User borrower;
 
+    /** Name/label for a guest borrower who has no registered account. Null when borrower is a registered user. */
+    private String guestBorrowerName;
+
     private String loanComment;
     private LocalDate loanDate;
     private LocalDate dueDate;
