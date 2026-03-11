@@ -6,6 +6,7 @@ const LoanContext = createContext(null);
 export function LoanProvider({ children }) {
   const { authFetch, isAuthenticated } = useAuth();
   const [loans, setLoans] = useState([]);
+  const [lentLoans, setLentLoans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
 
@@ -24,10 +25,21 @@ export function LoanProvider({ children }) {
     }
   }, [authFetch, isAuthenticated]);
 
-  const createLoan = useCallback(async ({ bookCopyId, dueDate, borrowerEmail }) => {
+  const fetchLentLoans = useCallback(async () => {
+    if (!isAuthenticated) return;
+    try {
+      const res = await authFetch("/api/loans/lent");
+      if (!res.ok) throw new Error("Failed to load lent loans");
+      setLentLoans(await res.json());
+    } catch (err) {
+      setError(err.message);
+    }
+  }, [authFetch, isAuthenticated]);
+
+  const createLoan = useCallback(async ({ bookCopyId, dueDate, borrowerEmail, guestBorrowerName }) => {
     const res = await authFetch("/api/loans", {
       method: "POST",
-      body: JSON.stringify({ bookCopyId, dueDate, borrowerEmail }),
+      body: JSON.stringify({ bookCopyId, dueDate, borrowerEmail, guestBorrowerName }),
     });
     if (!res.ok) {
       const text = await res.text();
@@ -43,17 +55,19 @@ export function LoanProvider({ children }) {
     if (!res.ok) throw new Error("Failed to return loan");
     const updated = await res.json();
     setLoans((prev) => prev.map((l) => (l.id === id ? updated : l)));
+    setLentLoans((prev) => prev.map((l) => (l.id === id ? updated : l)));
   }, [authFetch]);
 
   const deleteLoan = useCallback(async (id) => {
     const res = await authFetch(`/api/loans/${id}`, { method: "DELETE" });
     if (!res.ok) throw new Error("Failed to delete loan");
     setLoans((prev) => prev.filter((l) => l.id !== id));
+    setLentLoans((prev) => prev.filter((l) => l.id !== id));
   }, [authFetch]);
 
   const value = useMemo(
-    () => ({ loans, loading, error, fetchLoans, createLoan, returnLoan, deleteLoan }),
-    [loans, loading, error, fetchLoans, createLoan, returnLoan, deleteLoan]
+    () => ({ loans, lentLoans, loading, error, fetchLoans, fetchLentLoans, createLoan, returnLoan, deleteLoan }),
+    [loans, lentLoans, loading, error, fetchLoans, fetchLentLoans, createLoan, returnLoan, deleteLoan]
   );
 
   return <LoanContext.Provider value={value}>{children}</LoanContext.Provider>;

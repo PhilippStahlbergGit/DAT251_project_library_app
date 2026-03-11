@@ -21,7 +21,8 @@ export default function BooksPage() {
 
   // Track which book copy is showing the lend form (by id)
   const [lendingId, setLendingId] = useState(null);
-  const [lendData, setLendData] = useState({ borrowerEmail: "", dueDate: "" });
+  const [lendMode, setLendMode] = useState("email"); // "email" | "guest"
+  const [lendData, setLendData] = useState({ borrowerEmail: "", guestBorrowerName: "", dueDate: "" });
   const [lendError, setLendError] = useState("");
   const [lendLoading, setLendLoading] = useState(false);
 
@@ -31,7 +32,8 @@ export default function BooksPage() {
 
   const openLend = (id) => {
     setLendingId(id);
-    setLendData({ borrowerEmail: "", dueDate: "" });
+    setLendMode("email");
+    setLendData({ borrowerEmail: "", guestBorrowerName: "", dueDate: "" });
     setLendError("");
   };
 
@@ -45,7 +47,13 @@ export default function BooksPage() {
     setLendError("");
     setLendLoading(true);
     try {
-      await createLoan({ bookCopyId, ...lendData });
+      const payload = { bookCopyId, dueDate: lendData.dueDate };
+      if (lendMode === "guest") {
+        payload.guestBorrowerName = lendData.guestBorrowerName;
+      } else {
+        payload.borrowerEmail = lendData.borrowerEmail;
+      }
+      await createLoan(payload);
       setLendingId(null);
       fetchBooks(); // refresh availability status
     } catch (err) {
@@ -79,14 +87,47 @@ export default function BooksPage() {
               {/* Inline lend form */}
               {lendingId === copy.id ? (
                 <form className="lend-form" onSubmit={(e) => submitLend(e, copy.id)}>
-                  <input
-                    type="email"
-                    placeholder="Borrower's email"
-                    value={lendData.borrowerEmail}
-                    onChange={(e) => setLendData((p) => ({ ...p, borrowerEmail: e.target.value }))}
-                    required
-                    autoFocus
-                  />
+                  <div className="lend-mode-toggle">
+                    <label>
+                      <input
+                        type="radio"
+                        name={`lendMode-${copy.id}`}
+                        value="email"
+                        checked={lendMode === "email"}
+                        onChange={() => setLendMode("email")}
+                      />
+                      {" "}By email
+                    </label>
+                    <label>
+                      <input
+                        type="radio"
+                        name={`lendMode-${copy.id}`}
+                        value="guest"
+                        checked={lendMode === "guest"}
+                        onChange={() => setLendMode("guest")}
+                      />
+                      {" "}Guest (no account)
+                    </label>
+                  </div>
+                  {lendMode === "email" ? (
+                    <input
+                      type="email"
+                      placeholder="Borrower's email"
+                      value={lendData.borrowerEmail}
+                      onChange={(e) => setLendData((p) => ({ ...p, borrowerEmail: e.target.value }))}
+                      required
+                      autoFocus
+                    />
+                  ) : (
+                    <input
+                      type="text"
+                      placeholder="Borrower's name (e.g. Uncle Bob)"
+                      value={lendData.guestBorrowerName}
+                      onChange={(e) => setLendData((p) => ({ ...p, guestBorrowerName: e.target.value }))}
+                      required
+                      autoFocus
+                    />
+                  )}
                   <input
                     type="date"
                     value={lendData.dueDate}

@@ -2,6 +2,7 @@ package app.main.LibraryApp;
 
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -162,5 +163,88 @@ class LoanBookTest {
         mockMvc.perform(get("/api/loans"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$").isArray());
+    }
+
+    @Test
+    @WithMockUser(username = "lender@test.com")
+    void shouldLendBookToGuestWithoutEmail() throws Exception {
+        mockMvc.perform(post("/api/loans")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + ",\"guestBorrowerName\":\"Uncle Bob\"}"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.loanStatus").value("ACTIVE"))
+                .andExpect(jsonPath("$.guestBorrowerName").value("Uncle Bob"))
+                .andExpect(jsonPath("$.borrower").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(username = "lender@test.com")
+    void shouldReturnGuestLoan() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/loans")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + ",\"guestBorrowerName\":\"Uncle Bob\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long loanId = new ObjectMapper().readTree(result.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(patch("/api/loans/" + loanId + "/return"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.loanStatus").value("RETURNED"));
+    }
+
+    @Test
+    void shouldNotLendBookToGuestIfNotOwner() throws Exception {
+        mockMvc.perform(post("/api/loans")
+                .with(user("borrower@test.com"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + ",\"guestBorrowerName\":\"Uncle Bob\"}"))
+                .andExpect(status().is5xxServerError());
+    }
+
+    @Test
+    @WithMockUser(username = "lender@test.com")
+    void shouldSeeGuestLoanInLentLoans() throws Exception {
+        mockMvc.perform(post("/api/loans")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + ",\"guestBorrowerName\":\"Uncle Bob\"}"))
+                .andExpect(status().isCreated());
+
+        mockMvc.perform(get("/api/loans/lent"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$").isArray())
+                .andExpect(jsonPath("$[*].guestBorrowerName", org.hamcrest.Matchers.hasItem("Uncle Bob")));
+    }
+
+    @Test
+    void shouldNotReturnGuestLoanIfNotOwner() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/loans")
+                .with(user("lender@test.com"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + ",\"guestBorrowerName\":\"Uncle Bob\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long loanId = new ObjectMapper().readTree(result.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(patch("/api/loans/" + loanId + "/return")
+                .with(user("borrower@test.com")))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    void shouldDeleteGuestLoan() throws Exception {
+        MvcResult result = mockMvc.perform(post("/api/loans")
+                .with(user("lender@test.com"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"bookCopyId\":" + availableBookCopyId + ",\"guestBorrowerName\":\"Uncle Bob\"}"))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        Long loanId = new ObjectMapper().readTree(result.getResponse().getContentAsString()).get("id").asLong();
+
+        mockMvc.perform(delete("/api/loans/" + loanId)
+                .with(user("lender@test.com")))
+                .andExpect(status().isOk());
     }
 }

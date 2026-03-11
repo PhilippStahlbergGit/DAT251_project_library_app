@@ -47,6 +47,11 @@ public class LoanController {
         return ResponseEntity.ok(loanService.getAllLoans(getCurrentUserEmail()));
     }
 
+    @GetMapping("/lent")
+    public ResponseEntity<List<Loan>> getLentLoans() {
+        return ResponseEntity.ok(loanService.getLentLoans(getCurrentUserEmail()));
+    }
+
     @PatchMapping("/{id}/return")
     public ResponseEntity<Loan> returnLoan(@PathVariable Long id) {
         try {
