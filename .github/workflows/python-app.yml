@@ -5,7 +5,7 @@ name: Python application
 
 on:
   pull_request:
-    branches: [ "production", "testing" ]
+    branches: [ "production", "development" ]
 
 permissions:
   contents: read
