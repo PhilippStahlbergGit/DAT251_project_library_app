@@ -25,6 +25,11 @@ export default function MainLayout() {
                 Loans
               </NavLink>
             )}
+            {isAuthenticated && (
+              <NavLink to="/quiz" className={({ isActive }) => `nav-link ${isActive ? "active" : ""}`}>
+                Quiz
+              </NavLink>
+            )}
             {!isAuthenticated ? (
              <>
                 <NavLink to="/login" className={({ isActive}) => `nav-link ${isActive ? "active" : ""}`}>

@@ -14,3 +14,6 @@ spring:
 jwt:
   secret: ${JWT_SECRET:dGVzdFNlY3JldEtlrnRoaXNJc0xvbmdFbm91Z2hGb3JUZXN0aW5nUHVycG9zZXM=}
   expiration: ${JWT_EXPIRATION:86400000}
+openai:
+  api:
+    key: ${OPENAI_API_KEY:}
