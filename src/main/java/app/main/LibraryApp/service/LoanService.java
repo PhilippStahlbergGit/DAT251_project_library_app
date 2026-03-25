@@ -44,31 +44,40 @@ public class LoanService {
         loan.setLoanStatus(LoanStatus.ACTIVE);
 
         if (request.getGuestBorrowerName() != null && !request.getGuestBorrowerName().isBlank()) {
-            // Owner is lending to a guest — no account required
-            if (!bookCopy.getLibrary().getUser().getEmail().equals(requesterEmail)) {
-                throw new RuntimeException("Unauthorized: book copy does not belong to your library");
-            }
-            loan.setGuestBorrowerName(request.getGuestBorrowerName());
-            loan.setLoanComment("'" + bookCopy.getBook().getTitle() + "' loaned to " + request.getGuestBorrowerName());
+            lendToGuest(loan, bookCopy, request, requesterEmail);
         } else if (request.getBorrowerEmail() != null && !request.getBorrowerEmail().isBlank()) {
-            // Owner is lending to a registered user
-            if (!bookCopy.getLibrary().getUser().getEmail().equals(requesterEmail)) {
-                throw new RuntimeException("Unauthorized: book copy does not belong to your library");
-            }
-            User borrower = userService.getUserByEmail(request.getBorrowerEmail());
-            loan.setBorrower(borrower);
-            loan.setLoanComment("'" + bookCopy.getBook().getTitle() + "' loaned to " + borrower.getName());
+            lendToRegisteredUser(loan, bookCopy, request, requesterEmail);
         } else {
-            // Requester is borrowing someone else's book
-            User borrower = userService.getUserByEmail(requesterEmail);
-            loan.setBorrower(borrower);
-            loan.setLoanComment("'" + bookCopy.getBook().getTitle() + "' loaned to " + borrower.getName());
+            borrowForSelf(loan, requesterEmail);
         }
 
         bookCopy.setAvailabilityStatus(AvailabilityStatus.LOANED);
         bookCopyRepository.save(bookCopy);
 
         return loanRepository.save(loan);
+    }
+
+    private void lendToGuest(Loan loan, BookCopy bookCopy, LoanRequest request, String requesterEmail) {
+        if (!bookCopy.getLibrary().getUser().getEmail().equals(requesterEmail)) {
+            throw new RuntimeException("Unauthorized: book copy does not belong to your library");
+        }
+        loan.setGuestBorrowerName(request.getGuestBorrowerName());
+        loan.setLoanComment("'" + bookCopy.getBook().getTitle() + "' loaned to " + request.getGuestBorrowerName());
+    }
+
+    private void lendToRegisteredUser(Loan loan, BookCopy bookCopy, LoanRequest request, String requesterEmail) {
+        if (!bookCopy.getLibrary().getUser().getEmail().equals(requesterEmail)) {
+            throw new RuntimeException("Unauthorized: book copy does not belong to your library");
+        }
+        User borrower = userService.getUserByEmail(request.getBorrowerEmail());
+        loan.setBorrower(borrower);
+        loan.setLoanComment("'" + bookCopy.getBook().getTitle() + "' loaned to " + borrower.getName());
+    }
+
+    private void borrowForSelf(Loan loan, String requesterEmail) {
+        User borrower = userService.getUserByEmail(requesterEmail);
+        loan.setBorrower(borrower);
+        loan.setLoanComment("'" + loan.getBookCopy().getBook().getTitle() + "' loaned to " + borrower.getName());
     }
 
     public List<Loan> getAllLoans(String borrowerEmail) {
