@@ -3,7 +3,6 @@ package app.main.LibraryApp.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -16,6 +15,7 @@ import org.springframework.web.bind.annotation.RestController;
 import app.main.LibraryApp.domain.Loan;
 import app.main.LibraryApp.domain.dto.LoanRequest;
 import app.main.LibraryApp.service.LoanService;
+import app.main.LibraryApp.util.SecurityUtils;
 
 @RestController
 @RequestMapping("/api/loans")
@@ -30,7 +30,7 @@ public class LoanController {
     @PostMapping
     public ResponseEntity<Loan> createLoan(@RequestBody LoanRequest request) {
         try {
-            Loan loan = loanService.createLoan(getCurrentUserEmail(), request);
+            Loan loan = loanService.createLoan(SecurityUtils.getCurrentUserEmail(), request);
             return ResponseEntity.status(201).body(loan);
         } catch (RuntimeException e) {
             if (e.getMessage().equals("Book copy not found")) {
@@ -44,18 +44,18 @@ public class LoanController {
 
     @GetMapping
     public ResponseEntity<List<Loan>> getAllLoans() {
-        return ResponseEntity.ok(loanService.getAllLoans(getCurrentUserEmail()));
+        return ResponseEntity.ok(loanService.getAllLoans(SecurityUtils.getCurrentUserEmail()));
     }
 
     @GetMapping("/lent")
     public ResponseEntity<List<Loan>> getLentLoans() {
-        return ResponseEntity.ok(loanService.getLentLoans(getCurrentUserEmail()));
+        return ResponseEntity.ok(loanService.getLentLoans(SecurityUtils.getCurrentUserEmail()));
     }
 
     @PatchMapping("/{id}/return")
     public ResponseEntity<Loan> returnLoan(@PathVariable Long id) {
         try {
-            Loan loan = loanService.returnLoan(getCurrentUserEmail(), id);
+            Loan loan = loanService.returnLoan(SecurityUtils.getCurrentUserEmail(), id);
             return ResponseEntity.ok(loan);
         } catch (RuntimeException e) {
             if (e.getMessage().equals("Loan not found")) {
@@ -70,7 +70,7 @@ public class LoanController {
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteLoan(@PathVariable Long id) {
         try {
-            loanService.deleteLoan(getCurrentUserEmail(), id);
+            loanService.deleteLoan(SecurityUtils.getCurrentUserEmail(), id);
             return ResponseEntity.ok("Loan deleted");
         } catch (RuntimeException e) {
             if (e.getMessage().equals("Loan not found")) {
@@ -82,7 +82,4 @@ public class LoanController {
         }
     }
 
-    private String getCurrentUserEmail() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
-    }
 }
