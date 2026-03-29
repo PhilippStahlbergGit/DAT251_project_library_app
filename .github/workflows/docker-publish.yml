@@ -2,7 +2,7 @@ name: Docker CI
 
 on:
   push:
-    branches: [ "production", "testing" ]
+    branches: [ "production" ]
 
 jobs:
   build-and-push:
