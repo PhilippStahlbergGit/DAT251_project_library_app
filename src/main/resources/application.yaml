@@ -17,3 +17,6 @@ jwt:
 openai:
   api:
     key: ${OPENAI_API_KEY:}
+ocr:
+  service:
+    url: http://ocr:8001
