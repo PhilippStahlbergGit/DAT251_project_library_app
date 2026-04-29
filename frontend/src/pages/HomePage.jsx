@@ -8,7 +8,7 @@ import "./HomePage.css";
 
 export default function HomePage() {
   const { books, addBook, searchBooks } = useBooks();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, authFetch, user } = useAuth();
   const [titleQuery, setTitleQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -18,8 +18,8 @@ export default function HomePage() {
   const debounceRef = useRef(null);
   const dropdownRef = useRef(null);
   const [ocrImage, setOcrImage] = useState(null);
-  const [ocrPreview, setOcrPreview] = useState(null);
-  const [ocrResults, setOcrResults] = useState([]);
+  const [ocrBooks, setOcrBooks] = useState([]);
+  const [ocrAdded, setOcrAdded] = useState({});
   const [ocrLoading, setOcrLoading] = useState(false);
   const [ocrError, setOcrError] = useState("");
 
@@ -114,8 +114,8 @@ export default function HomePage() {
     const file = e.target.files[0];
     if (!file) return;
     setOcrImage(file);
-    setOcrPreview(URL.createObjectURL(file));
-    setOcrResults([]);
+    setOcrBooks([]);
+    setOcrAdded({});
     setOcrError("");
   };
 
@@ -126,17 +126,38 @@ export default function HomePage() {
     try {
       const formData = new FormData();
       formData.append("image", ocrImage);
-      const res = await fetch("http://localhost:8080/ocr/scan", {
+
+      const token = user?.token;
+      const res = await fetch("/ocr/scan", {
         method: "POST",
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
         body: formData,
       });
       if (!res.ok) throw new Error("Scan failed");
       const data = await res.json();
-      setOcrResults(data.texts ?? []);
+      setOcrBooks(data ?? []);
     } catch (err) {
       setOcrError("Failed to scan image. Please try again.");
     } finally {
       setOcrLoading(false);
+    }
+  };
+
+  const handleAddOcrBook = async (book, index) => {
+    try {
+      await addBook({
+        title: book.title,
+        author: book.authors?.[0] ?? "N/A",
+        year: book.publicationYear,
+        isbn: book.isbn,
+        publisher: book.publisher,
+        genre: book.genre,
+      });
+      setOcrAdded((prev) => ({ ...prev, [index]: true }));
+    } catch (err) {
+      console.error("Failed to add book:", err);
     }
   };
 
@@ -232,8 +253,12 @@ export default function HomePage() {
               <h2>Add by Photo</h2>
               <p className="ocr-description">Upload a photo of your bookshelf to detect titles automatically.</p>
               <label className="ocr-upload-label">
-                {ocrPreview ? (
-                  <img src={ocrPreview} alt="Preview" className="ocr-preview" />
+                {ocrImage ? (
+                  <div className="ocr-upload-placeholder">
+                    <span>📄</span>
+                    <span>{ocrImage.name}</span>
+                    <span className="ocr-change-hint">Click to change</span>
+                  </div>
                 ) : (
                   <div className="ocr-upload-placeholder">
                     <span>📷</span>
@@ -247,18 +272,36 @@ export default function HomePage() {
                   className="ocr-file-input"
                 />
               </label>
-              {ocrPreview && (
+              {ocrImage && (
                 <button className="add-book-btn" onClick={handleOcrScan} disabled={ocrLoading}>
-                  {ocrLoading ? "Scanning…" : "Scan Bookshelf"}
+                  {ocrLoading ? (
+                    <span className="ocr-spinner-row">
+                      <span className="ocr-spinner" /> Scanning…
+                    </span>
+                  ) : "Scan Bookshelf"}
                 </button>
               )}
               {ocrError && <p className="add-book-error">{ocrError}</p>}
-              {ocrResults.length > 0 && (
+              {ocrBooks.length > 0 && (
                 <div className="ocr-results">
-                  <p className="ocr-results-label">Detected titles:</p>
+                  <p className="ocr-results-label">Detected books:</p>
                   <ul>
-                    {ocrResults.map((text, i) => (
-                      <li key={i}>{text}</li>
+                    {ocrBooks.map((book, i) => (
+                      <li key={i} className="ocr-result-item">
+                        <div className="ocr-result-info">
+                          <strong>{book.title}</strong>
+                          {book.authors?.length > 0 && (
+                            <span>{book.authors[0]}</span>
+                          )}
+                        </div>
+                        <button
+                          className="ocr-add-btn"
+                          onClick={() => handleAddOcrBook(book, i)}
+                          disabled={ocrAdded[i]}
+                        >
+                          {ocrAdded[i] ? "✓ Added" : "+ Add"}
+                        </button>
+                      </li>
                     ))}
                   </ul>
                 </div>

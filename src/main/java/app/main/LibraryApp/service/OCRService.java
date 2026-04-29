@@ -80,11 +80,10 @@ public class OCRService {
                             b.setIsbn(s.getIsbn());
                             b.setPublisher(s.getPublisher());
                             foundBooks.add(b);
+                            System.out.println("Book added from OCR text: " + ocrText);
                             break;
                         }
                     }
-
-                    System.out.println("Book added from OCR text: " + ocrText);
                 }
             }
 
