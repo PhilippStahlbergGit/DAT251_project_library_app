@@ -2,8 +2,6 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
 
 const RecommendationsContext = createContext(null);
 
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
-
 async function readError(res) {
   try {
     const data = await res.json();
@@ -41,30 +39,6 @@ function normalizeOwnedBooks(ownedBooks = []) {
     .filter((book) => typeof book.title === "string" && book.title.trim().length > 0);
 }
 
-async function waitUntilRecommendationDataReady({ maxAttempts = 20, intervalMs = 1000 } = {}) {
-  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
-    const res = await fetch("/data/status");
-    if (!res.ok) {
-      throw new Error(await readError(res));
-    }
-
-    const status = await res.json();
-    if (status?.ready) {
-      return;
-    }
-
-    if (status?.error) {
-      throw new Error(`Recommendation data load failed: ${status.error}`);
-    }
-
-    if (attempt < maxAttempts) {
-      await sleep(intervalMs);
-    }
-  }
-
-  throw new Error("Recommendation data is still loading. Please try again shortly.");
-}
-
 export function RecommendationsProvider({ children }) {
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
@@ -80,8 +54,6 @@ export function RecommendationsProvider({ children }) {
         setRecommendations([]);
         return;
       }
-
-      await waitUntilRecommendationDataReady();
 
       const res = await fetch("/recommend", {
         method: "POST",
