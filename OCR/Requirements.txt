@@ -1,0 +1,4 @@
+flask
+pytesseract
+opencv-python-headless
+numpy

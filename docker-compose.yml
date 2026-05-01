@@ -9,6 +9,7 @@ services:
     depends_on:
       - app
       - recommendation
+      - ocr
 
   app:
     build:
@@ -23,6 +24,7 @@ services:
     depends_on:
       - db
       - recommendation
+      - ocr
 
   db:
     image: postgres:16
@@ -41,6 +43,13 @@ services:
       dockerfile: Dockerfile
     ports:
       - "8000:8000"
+
+  ocr:
+    build:
+      context: ./OCR
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
 
 volumes:
   postgres_data:

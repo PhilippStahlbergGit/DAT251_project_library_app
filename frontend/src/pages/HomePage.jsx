@@ -8,7 +8,7 @@ import "./HomePage.css";
 
 export default function HomePage() {
   const { books, addBook, searchBooks } = useBooks();
-  const { isAuthenticated } = useAuth();
+  const { isAuthenticated, authFetch, user } = useAuth();
   const [titleQuery, setTitleQuery] = useState("");
   const [suggestions, setSuggestions] = useState([]);
   const [loadingSuggestions, setLoadingSuggestions] = useState(false);
@@ -17,6 +17,11 @@ export default function HomePage() {
   const [success, setSuccess] = useState("");
   const debounceRef = useRef(null);
   const dropdownRef = useRef(null);
+  const [ocrImage, setOcrImage] = useState(null);
+  const [ocrBooks, setOcrBooks] = useState([]);
+  const [ocrAdded, setOcrAdded] = useState({});
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrError, setOcrError] = useState("");
 
   const { recommendations, loadingRecommendations, recommendationsError, fetchRecommendations, clearRecommendations } =
     useRecommendations();
@@ -105,6 +110,57 @@ export default function HomePage() {
     }
   };
 
+  const handleOcrUpload = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    setOcrImage(file);
+    setOcrBooks([]);
+    setOcrAdded({});
+    setOcrError("");
+  };
+
+  const handleOcrScan = async () => {
+    if (!ocrImage) return;
+    setOcrLoading(true);
+    setOcrError("");
+    try {
+      const formData = new FormData();
+      formData.append("image", ocrImage);
+
+      const token = user?.token;
+      const res = await fetch("/ocr/scan", {
+        method: "POST",
+        headers: {
+          ...(token && { Authorization: `Bearer ${token}` }),
+        },
+        body: formData,
+      });
+      if (!res.ok) throw new Error("Scan failed");
+      const data = await res.json();
+      setOcrBooks(data ?? []);
+    } catch (err) {
+      setOcrError("Failed to scan image. Please try again.");
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
+  const handleAddOcrBook = async (book, index) => {
+    try {
+      await addBook({
+        title: book.title,
+        author: book.authors?.[0] ?? "N/A",
+        year: book.publicationYear,
+        isbn: book.isbn,
+        publisher: book.publisher,
+        genre: book.genre,
+      });
+      setOcrAdded((prev) => ({ ...prev, [index]: true }));
+    } catch (err) {
+      console.error("Failed to add book:", err);
+    }
+  };
+
   return (
     <section>
       <h1>Library App</h1>
@@ -134,64 +190,123 @@ export default function HomePage() {
             )}
           </div>
 
-          <div className="add-book-card">
-            <h2>Add a Book</h2>
-            <form onSubmit={onSubmit} className="add-book-form">
-              <label htmlFor="title">Search by title</label>
-              <div className="book-search-wrapper" ref={dropdownRef}>
+          <div className="add-book-row">
+            <div className="add-book-card">
+              <h2>Add a Book</h2>
+              <form onSubmit={onSubmit} className="add-book-form">
+                <label htmlFor="title">Search by title</label>
+                <div className="book-search-wrapper" ref={dropdownRef}>
+                  <input
+                    id="title"
+                    name="title"
+                    type="text"
+                    placeholder="Start typing a title…"
+                    value={titleQuery}
+                    onChange={(e) => {
+                      setSelected(null);
+                      setTitleQuery(e.target.value);
+                    }}
+                    autoComplete="off"
+                    required
+                  />
+                  {loadingSuggestions && <p className="suggestions-loading">Searching…</p>}
+                  {suggestions.length > 0 && (
+                    <ul className="suggestions-dropdown">
+                      {suggestions.map((s, i) => (
+                        <li key={i} onMouseDown={() => handleSelect(s)}>
+                          <span className="suggestion-title">{s.title}</span>
+                          {s.authors?.length > 0 && (
+                            <span className="suggestion-meta">
+                              {s.authors.slice(0, 2).join(", ")}
+                              {s.year ? ` · ${s.year}` : ""}
+                            </span>
+                          )}
+                        </li>
+                      ))}
+                    </ul>
+                  )}
+                </div>
+                {selected && (
+                  <div className="selected-book-preview">
+                    <div className="selected-book-info">
+                      <strong>{selected.title}</strong>
+                      <span>{selected.authors?.join(", ")}</span>
+                      {selected.year > 0 && <span>{selected.year}</span>}
+                      {selected.publisher && selected.publisher !== "N/A" && (
+                        <span className="selected-publisher">{selected.publisher}</span>
+                      )}
+                    </div>
+                    <button type="button" className="clear-selection-btn" onClick={handleClear}>
+                      ✕ Change
+                    </button>
+                  </div>
+                )}
+                {error && <p className="add-book-error">{error}</p>}
+                {success && <p className="add-book-success">{success}</p>}
+                <button type="submit" className="add-book-btn" disabled={!selected}>
+                  Add to Library
+                </button>
+              </form>
+            </div>
+
+            <div className="add-book-card ocr-card">
+              <h2>Add by Photo</h2>
+              <p className="ocr-description">Upload a photo of your bookshelf to detect titles automatically.</p>
+              <label className="ocr-upload-label">
+                {ocrImage ? (
+                  <div className="ocr-upload-placeholder">
+                    <span>📄</span>
+                    <span>{ocrImage.name}</span>
+                    <span className="ocr-change-hint">Click to change</span>
+                  </div>
+                ) : (
+                  <div className="ocr-upload-placeholder">
+                    <span>📷</span>
+                    <span>Click to upload image</span>
+                  </div>
+                )}
                 <input
-                  id="title"
-                  name="title"
-                  type="text"
-                  placeholder="Start typing a title…"
-                  value={titleQuery}
-                  onChange={(e) => {
-                    setSelected(null);
-                    setTitleQuery(e.target.value);
-                  }}
-                  autoComplete="off"
-                  required
+                  type="file"
+                  accept="image/*"
+                  onChange={handleOcrUpload}
+                  className="ocr-file-input"
                 />
-                {loadingSuggestions && <p className="suggestions-loading">Searching…</p>}
-                {suggestions.length > 0 && (
-                  <ul className="suggestions-dropdown">
-                    {suggestions.map((s, i) => (
-                      <li key={i} onMouseDown={() => handleSelect(s)}>
-                        <span className="suggestion-title">{s.title}</span>
-                        {s.authors?.length > 0 && (
-                          <span className="suggestion-meta">
-                            {s.authors.slice(0, 2).join(", ")}
-                            {s.year ? ` · ${s.year}` : ""}
-                          </span>
-                        )}
+              </label>
+              {ocrImage && (
+                <button className="add-book-btn" onClick={handleOcrScan} disabled={ocrLoading}>
+                  {ocrLoading ? (
+                    <span className="ocr-spinner-row">
+                      <span className="ocr-spinner" /> Scanning…
+                    </span>
+                  ) : "Scan Bookshelf"}
+                </button>
+              )}
+              {ocrError && <p className="add-book-error">{ocrError}</p>}
+              {ocrBooks.length > 0 && (
+                <div className="ocr-results">
+                  <p className="ocr-results-label">Detected books:</p>
+                  <ul>
+                    {ocrBooks.map((book, i) => (
+                      <li key={i} className="ocr-result-item">
+                        <div className="ocr-result-info">
+                          <strong>{book.title}</strong>
+                          {book.authors?.length > 0 && (
+                            <span>{book.authors[0]}</span>
+                          )}
+                        </div>
+                        <button
+                          className="ocr-add-btn"
+                          onClick={() => handleAddOcrBook(book, i)}
+                          disabled={ocrAdded[i]}
+                        >
+                          {ocrAdded[i] ? "✓ Added" : "+ Add"}
+                        </button>
                       </li>
                     ))}
                   </ul>
-                )}
-              </div>
-
-              {selected && (
-                <div className="selected-book-preview">
-                  <div className="selected-book-info">
-                    <strong>{selected.title}</strong>
-                    <span>{selected.authors?.join(", ")}</span>
-                    {selected.year > 0 && <span>{selected.year}</span>}
-                    {selected.publisher && selected.publisher !== "N/A" && (
-                      <span className="selected-publisher">{selected.publisher}</span>
-                    )}
-                  </div>
-                  <button type="button" className="clear-selection-btn" onClick={handleClear}>
-                    ✕ Change
-                  </button>
                 </div>
               )}
-
-              {error && <p className="add-book-error">{error}</p>}
-              {success && <p className="add-book-success">{success}</p>}
-              <button type="submit" className="add-book-btn" disabled={!selected}>
-                Add to Library
-              </button>
-            </form>
+            </div>
           </div>
         </div>
       ) : (
