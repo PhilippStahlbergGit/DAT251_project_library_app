@@ -1,6 +1,22 @@
+import sys
+from pathlib import Path
+
 from fastapi.testclient import TestClient
-import recommendation_pipeline.Recommandation as rec_module
-from recommendation_pipeline.main import app
+
+# NOTE: hard coded, but works for now
+_HERE = Path(__file__).resolve()
+_PIPELINE_DIR = _HERE.parents[1]
+_REPO_ROOT = _HERE.parents[2]
+for _path in (str(_REPO_ROOT), str(_PIPELINE_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+try:
+    import recommendation_pipeline.Recommandation as rec_module
+    from recommendation_pipeline.main import app
+except ModuleNotFoundError:
+    import Recommandation as rec_module
+    from main import app
 
 
 client = TestClient(app)
@@ -87,4 +103,3 @@ def test_recommend_invalid_k():
     )
     assert response.status_code == 400
     assert "k must be a positive integer" in response.json()["detail"]
-

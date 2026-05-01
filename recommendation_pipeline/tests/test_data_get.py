@@ -1,5 +1,19 @@
+import sys
+from pathlib import Path
+
 from fastapi.testclient import TestClient
-from recommendation_pipeline.main import app
+
+_HERE = Path(__file__).resolve()
+_PIPELINE_DIR = _HERE.parents[1]
+_REPO_ROOT = _HERE.parents[2]
+for _path in (str(_REPO_ROOT), str(_PIPELINE_DIR)):
+    if _path not in sys.path:
+        sys.path.insert(0, _path)
+
+try:
+    from recommendation_pipeline.main import app
+except ModuleNotFoundError:
+    from main import app
 
 
 client = TestClient(app)
@@ -21,4 +35,3 @@ def test_get_data_status_always_ready():
     assert payload["ready"] is True
     assert payload["loading"] is False
     assert payload["rows"] == 0
-
