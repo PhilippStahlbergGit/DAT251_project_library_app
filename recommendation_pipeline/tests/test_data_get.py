@@ -3,6 +3,8 @@ from pathlib import Path
 
 from fastapi.testclient import TestClient
 
+
+# NOTE: hard coded, but works for now
 _HERE = Path(__file__).resolve()
 _PIPELINE_DIR = _HERE.parents[1]
 _REPO_ROOT = _HERE.parents[2]

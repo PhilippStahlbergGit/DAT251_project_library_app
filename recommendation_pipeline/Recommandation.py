@@ -37,6 +37,18 @@ GENRE_TO_SUBJECT = {
     "HISTORY": "history",
     "ROMANCE": "romance",
 }
+SUBJECT_KEYWORDS_TO_GENRE = {
+    "science fiction": "SCIENCE_FICTION",
+    "sci fi": "SCIENCE_FICTION",
+    "fantasy": "FANTASY",
+    "mystery": "MYSTERY",
+    "romance": "ROMANCE",
+    "biography": "BIOGRAPHY",
+    "history": "HISTORY",
+    "non fiction": "NON_FICTION",
+    "nonfiction": "NON_FICTION",
+    "fiction": "FICTION",
+}
 
 
 class Recommandation(BaseModel):
@@ -127,6 +139,59 @@ def _request_json(path: str, params: Optional[dict[str, Any]] = None) -> dict[st
     raise RuntimeError(f"OpenLibrary request failed for {path}: {last_exc}")
 
 
+def _subject_to_genre(subject: str) -> Optional[str]:
+    normalized = _normalize_text(subject)
+    if not normalized:
+        return None
+    for keyword, genre in SUBJECT_KEYWORDS_TO_GENRE.items():
+        if keyword in normalized:
+            return genre
+    return None
+
+
+def _enrich_owned_book(book: Book) -> tuple[List[str], Optional[str]]:
+    raw_authors = [a for a in (book.authors or []) if _normalize_text(a) and _normalize_text(a) != "n a"]
+    raw_genre = str(book.genre).strip().upper() if book.genre else ""
+    if raw_authors and raw_genre and raw_genre != "UNKNOWN":
+        return raw_authors, raw_genre
+
+    if not book.title or not book.title.strip():
+        return raw_authors, raw_genre if raw_genre else None
+
+    try:
+        payload = _request_json(
+            "/search.json",
+            {
+                "title": book.title.strip(),
+                "limit": 1,
+                "language": "eng",
+                "fields": "title,author_name,subject",
+            },
+        )
+    except RuntimeError:
+        return raw_authors, raw_genre if raw_genre else None
+    docs = payload.get("docs")
+    if not isinstance(docs, list) or not docs:
+        return raw_authors, raw_genre if raw_genre else None
+
+    doc = docs[0]
+    authors = list(raw_authors)
+    if not authors and isinstance(doc.get("author_name"), list):
+        authors = [name for name in doc["author_name"] if isinstance(name, str) and name.strip()]
+
+    genre = raw_genre if raw_genre and raw_genre != "UNKNOWN" else None
+    if genre is None and isinstance(doc.get("subject"), list):
+        for subject in doc["subject"]:
+            if not isinstance(subject, str):
+                continue
+            mapped = _subject_to_genre(subject)
+            if mapped:
+                genre = mapped
+                break
+
+    return authors, genre
+
+
 def _extract_authors_from_work(work: dict[str, Any]) -> List[str]:
     names: List[str] = []
     if isinstance(work.get("authors"), list):
@@ -188,12 +253,12 @@ def _make_user_profile(owned_books: List[Book]) -> UserProfile:
     owned_author_set: set[str] = set()
 
     for book in owned_books:
-        if book.genre:
-            genre_norm = str(book.genre).strip().upper()
+        authors, genre = _enrich_owned_book(book)
+        if genre:
+            genre_norm = str(genre).strip().upper()
             if genre_norm and genre_norm != "UNKNOWN":
                 genre_counter[genre_norm] += 1
 
-        authors = book.authors or []
         for author in authors:
             author_norm = _normalize_text(author)
             if author_norm:
@@ -283,6 +348,13 @@ def _collect_candidates(profile: UserProfile) -> Dict[str, Candidate]:
             else:
                 existing.source_authors.add(author_norm)
 
+    # Fallback: if user profile is too sparse or enrichment misses, keep UX alive.
+    if not candidates:
+        for candidate in _fetch_subject_candidates("fiction"):
+            if candidate.key not in candidates:
+                candidate.source_genres.add("FICTION")
+                candidates[candidate.key] = candidate
+
     return candidates
 
 
@@ -348,4 +420,3 @@ def make_recommendations(owned_books: List[Book] | Book, k: int, _unused_df: Any
             )
         )
     return out
-
