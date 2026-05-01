@@ -11,14 +11,12 @@ try:
     from .Recommendation_system import ensure_recommender, recommend_from_books
 except ImportError:
     from Recommendation_system import ensure_recommender, recommend_from_books
-import kagglehub
 import pandas as pd
 import json
 import csv
 import io
 import zipfile
 
-from functools import lru_cache
 import re
 
 
@@ -136,15 +134,16 @@ def _parse_files_env(value: str | None) -> List[str]:
     return [part.strip() for part in value.split(",") if part.strip()]
 
 
-def _get_dataset_and_files() -> tuple[str, List[str]]:
-    dataset = os.getenv("DATASET", "").strip().strip('"').strip("'")
+def _get_data_root_and_files() -> tuple[Path, List[str]]:
+    data_root_raw = os.getenv("DATA_ROOT", "").strip().strip('"').strip("'")
+    data_root = Path(data_root_raw) if data_root_raw else Path(__file__).with_name("data")
     files = _parse_files_env(os.getenv("FILES"))
-    return dataset, files
+    return data_root, files
 
 
 
 
-def _load_dataset_file(dataset: str, file_name: str) -> pd.DataFrame:
+def _load_dataset_file(data_root: Path, file_name: str) -> pd.DataFrame:
     required_cols = ["Id", "Name", "Authors", "pagesNumber", "PublishYear", "Rating", "RatingDistTotal"]
 
     def _canon(col_name: str) -> str:
@@ -159,10 +158,6 @@ def _load_dataset_file(dataset: str, file_name: str) -> pd.DataFrame:
         _canon("Rating"): "Rating",
         _canon("RatingDistTotal"): "RatingDistTotal",
     }
-
-    @lru_cache(maxsize=8)
-    def _dataset_dir(ds: str) -> Path:
-        return Path(kagglehub.dataset_download(ds))
 
     def _read_csv_with_fallbacks(source, source_label: str) -> pd.DataFrame:
         last_exc = None
@@ -218,8 +213,7 @@ def _load_dataset_file(dataset: str, file_name: str) -> pd.DataFrame:
             f"Could not parse dataset file '{source_label}'. Last error: {last_exc}"
         )
 
-    ds_dir = _dataset_dir(dataset)
-    direct_matches = list(ds_dir.rglob(file_name))
+    direct_matches = list(data_root.rglob(file_name))
     if direct_matches:
         matched_path = direct_matches[0]
         if matched_path.suffix.lower() == ".zip":
@@ -232,29 +226,31 @@ def _load_dataset_file(dataset: str, file_name: str) -> pd.DataFrame:
                 return _read_csv_with_fallbacks(zf.read(member), f"{matched_path.name}:{member}")
         return _read_csv_with_fallbacks(matched_path, matched_path.name)
 
-    zip_candidates = list(ds_dir.rglob("*.zip"))
+    zip_candidates = list(data_root.rglob("*.zip"))
     for zip_path in zip_candidates:
         with zipfile.ZipFile(zip_path, "r") as zf:
             member = next((n for n in zf.namelist() if n.endswith(file_name)), None)
             if member is not None:
                 return _read_csv_with_fallbacks(zf.read(member), f"{zip_path.name}:{member}")
 
-    raise ValueError(f"Could not find '{file_name}' in downloaded dataset at '{ds_dir}'")
+    raise ValueError(f"Could not find '{file_name}' under local data root '{data_root}'")
 
 
 
 
 def getData():
-    dataset, files = _get_dataset_and_files()
+    data_root, files = _get_data_root_and_files()
 
-    if not dataset:
-        raise ValueError("Missing DATASET env var. Set DATASET before calling getData().")
     if not files:
         raise ValueError(
             "Missing/invalid FILES env var. Use comma-separated values or a JSON list, e.g. FILES='books.csv,ratings.csv'"
         )
+    if not data_root.exists():
+        raise ValueError(
+            f"Data root does not exist: '{data_root}'. Set DATA_ROOT or add files under recommendation_pipeline/data."
+        )
 
-    dfs = [_load_dataset_file(dataset, f) for f in files]
+    dfs = [_load_dataset_file(data_root, f) for f in files]
 
     df = pd.concat(dfs, ignore_index=True)
     return df
