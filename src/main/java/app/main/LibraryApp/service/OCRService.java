@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 import app.main.LibraryApp.api.BookSearch;
 import app.main.LibraryApp.domain.Book;
 import app.main.LibraryApp.domain.dto.BookSuggestion;
+import app.main.LibraryApp.domain.enums.Genre;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 
@@ -79,6 +80,15 @@ public class OCRService {
                             b.setPublicationYear(s.getYear());
                             b.setIsbn(s.getIsbn());
                             b.setPublisher(s.getPublisher());
+
+                            try {
+                                b.setGenre(s.getGenre() != null
+                                        ? Genre.valueOf(s.getGenre())
+                                        : Genre.UNKNOWN);
+                            } catch (IllegalArgumentException e) {
+                                b.setGenre(Genre.UNKNOWN);
+                            }
+
                             foundBooks.add(b);
                             System.out.println("Book added from OCR text: " + ocrText);
                             break;
