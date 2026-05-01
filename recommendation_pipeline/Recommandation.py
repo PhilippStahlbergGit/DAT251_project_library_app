@@ -1,5 +1,14 @@
+from __future__ import annotations
 
-from typing import List
+from collections import Counter
+from dataclasses import dataclass, field
+from datetime import datetime, timedelta, timezone
+from typing import Any, Dict, List, Optional
+import os
+import re
+import urllib.parse
+
+import requests
 from pydantic import BaseModel
 
 try:
@@ -7,310 +16,407 @@ try:
 except ImportError:
     from models import Book
 
-try:
-    from .Recommendation_system import ensure_recommender, recommend_from_books
-except ImportError:
-    from Recommendation_system import ensure_recommender, recommend_from_books
-import kagglehub
-import pandas as pd
-import json
-import csv
-import io
-import zipfile
 
-from functools import lru_cache
-import re
+OPENLIBRARY_BASE_URL = os.getenv("OPENLIBRARY_BASE_URL", "https://openlibrary.org")
+HTTP_TIMEOUT_SECONDS = float(os.getenv("OPENLIBRARY_TIMEOUT_SECONDS", "8"))
+CACHE_TTL_SECONDS = int(os.getenv("OPENLIBRARY_CACHE_TTL_SECONDS", "900"))
+MAX_GENRES = int(os.getenv("OPENLIBRARY_MAX_GENRES", "3"))
+MAX_AUTHORS = int(os.getenv("OPENLIBRARY_MAX_AUTHORS", "5"))
+SUBJECT_LIMIT = int(os.getenv("OPENLIBRARY_SUBJECT_LIMIT", "50"))
+AUTHOR_WORKS_LIMIT = int(os.getenv("OPENLIBRARY_AUTHOR_WORKS_LIMIT", "100"))
+MAX_RETRIES = int(os.getenv("OPENLIBRARY_MAX_RETRIES", "2"))
+USER_AGENT = os.getenv("OPENLIBRARY_USER_AGENT", "LibraryApp-Recommendation/1.0 (contact: admin@example.com)")
 
+GENRE_TO_SUBJECT = {
+    "FICTION": "fiction",
+    "NON_FICTION": "nonfiction",
+    "SCIENCE_FICTION": "science_fiction",
+    "FANTASY": "fantasy",
+    "MYSTERY": "mystery",
+    "BIOGRAPHY": "biography",
+    "HISTORY": "history",
+    "ROMANCE": "romance",
+}
+SUBJECT_KEYWORDS_TO_GENRE = {
+    "science fiction": "SCIENCE_FICTION",
+    "sci fi": "SCIENCE_FICTION",
+    "fantasy": "FANTASY",
+    "mystery": "MYSTERY",
+    "romance": "ROMANCE",
+    "biography": "BIOGRAPHY",
+    "history": "HISTORY",
+    "non fiction": "NON_FICTION",
+    "nonfiction": "NON_FICTION",
+    "fiction": "FICTION",
+}
 
-import os
-from pathlib import Path
 
 class Recommandation(BaseModel):
     book: Book
     score: float
 
 
-def _normalize_text(value: str | None) -> str:
+@dataclass
+class UserProfile:
+    genre_counter: Counter[str]
+    author_counter: Counter[str]
+    owned_keys: set[str]
+    owned_author_set: set[str]
+
+
+@dataclass
+class Candidate:
+    key: str
+    title: str
+    authors: List[str]
+    publication_year: Optional[int]
+    edition_count: int
+    source_genres: set[str] = field(default_factory=set)
+    source_authors: set[str] = field(default_factory=set)
+
+
+@dataclass
+class CacheEntry:
+    value: Any
+    expires_at: datetime
+
+    @property
+    def is_expired(self) -> bool:
+        return datetime.now(timezone.utc) >= self.expires_at
+
+
+_CACHE: Dict[str, CacheEntry] = {}
+_SESSION = requests.Session()
+_SESSION.headers.update({"User-Agent": USER_AGENT})
+
+
+def _normalize_text(value: Optional[str]) -> str:
     if not value:
         return ""
     normalized = re.sub(r"[^a-z0-9]+", " ", str(value).casefold())
     return " ".join(normalized.split())
 
 
-def _match_owned_book_row(catalog_df: pd.DataFrame, owned_book: Book) -> pd.DataFrame:
-    title_raw = (owned_book.title or "").strip()
-    if not title_raw:
-        return catalog_df.iloc[0:0]
-
-    title_series = catalog_df["Name"].astype(str)
-
-    # 1) Exact (case-sensitive), fast path.
-    exact = catalog_df[title_series == title_raw]
-    if not exact.empty:
-        return exact.iloc[[0]]
-
-    # 2) Exact (case-insensitive).
-    title_casefold = title_raw.casefold()
-    exact_ci = catalog_df[title_series.str.casefold() == title_casefold]
-    if not exact_ci.empty:
-        return exact_ci.iloc[[0]]
-
-    # 3) Normalized exact (remove punctuation, collapse spaces, casefold).
-    normalized_catalog_titles = title_series.map(_normalize_text)
-    normalized_title = _normalize_text(title_raw)
-    normalized_exact = catalog_df[normalized_catalog_titles == normalized_title]
-    if not normalized_exact.empty:
-        return normalized_exact.iloc[[0]]
-
-    # 4) Substring fallback for cases like missing subtitle/suffix in input title.
-    if normalized_title:
-        contains = catalog_df[
-            normalized_catalog_titles.str.contains(re.escape(normalized_title), na=False)
-        ]
-        if not contains.empty:
-            # Optional lightweight author preference.
-            if owned_book.authors:
-                wanted_authors = {_normalize_text(a) for a in owned_book.authors if a}
-                contains_authors = contains[contains["Authors"].astype(str).map(_normalize_text).isin(wanted_authors)]
-                if not contains_authors.empty:
-                    return contains_authors.iloc[[0]]
-            return contains.iloc[[0]]
-
-    return catalog_df.iloc[0:0]
+def _cache_get(key: str) -> Any:
+    entry = _CACHE.get(key)
+    if entry is None:
+        return None
+    if entry.is_expired:
+        _CACHE.pop(key, None)
+        return None
+    return entry.value
 
 
-def _load_local_env_file() -> None:
-    env_path = Path(__file__).with_name(".env")
-    if not env_path.exists():
-        return
+def _cache_set(key: str, value: Any) -> None:
+    _CACHE[key] = CacheEntry(
+        value=value,
+        expires_at=datetime.now(timezone.utc) + timedelta(seconds=CACHE_TTL_SECONDS),
+    )
 
-    raw_bytes = env_path.read_bytes()
-    env_text = None
-    for encoding in ("utf-8", "utf-8-sig", "cp1252", "latin1"):
+
+def _request_json(path: str, params: Optional[dict[str, Any]] = None) -> dict[str, Any]:
+    if params is None:
+        params = {}
+    query = urllib.parse.urlencode(params, doseq=True)
+    cache_key = f"{path}?{query}"
+    cached = _cache_get(cache_key)
+    if cached is not None:
+        return cached
+
+    url = f"{OPENLIBRARY_BASE_URL}{path}"
+    last_exc: Optional[Exception] = None
+    for attempt in range(MAX_RETRIES + 1):
         try:
-            env_text = raw_bytes.decode(encoding)
-            break
-        except UnicodeDecodeError:
-            continue
-
-    if env_text is None:
-        raise ValueError(f"Could not decode env file: {env_path}")
-
-    for raw_line in env_text.splitlines():
-        line = raw_line.strip()
-        if not line or line.startswith("#") or "=" not in line:
-            continue
-
-        key, value = line.split("=", 1)
-        key = key.strip()
-        value = value.strip()
-
-        if (
-            len(value) >= 2
-            and value[0] == value[-1]
-            and value[0] in ('"', "'")
-        ):
-            value = value[1:-1]
-
-        # Keep real environment variables as the highest priority.
-        os.environ.setdefault(key, value)
+            response = _SESSION.get(url, params=params, timeout=HTTP_TIMEOUT_SECONDS)
+            response.raise_for_status()
+            payload = response.json()
+            _cache_set(cache_key, payload)
+            return payload
+        except requests.RequestException as exc:
+            last_exc = exc
+            if attempt >= MAX_RETRIES:
+                break
+    raise RuntimeError(f"OpenLibrary request failed for {path}: {last_exc}")
 
 
-_load_local_env_file()
+def _subject_to_genre(subject: str) -> Optional[str]:
+    normalized = _normalize_text(subject)
+    if not normalized:
+        return None
+    for keyword, genre in SUBJECT_KEYWORDS_TO_GENRE.items():
+        if keyword in normalized:
+            return genre
+    return None
 
 
-def _parse_files_env(value: str | None) -> List[str]:
-    # for reusability later, to add more files if every needed.
-    if not value:
-        return []
+def _enrich_owned_book(book: Book) -> tuple[List[str], Optional[str]]:
+    raw_authors = [a for a in (book.authors or []) if _normalize_text(a) and _normalize_text(a) != "n a"]
+    raw_genre = str(book.genre).strip().upper() if book.genre else ""
+    if raw_authors and raw_genre and raw_genre != "UNKNOWN":
+        return raw_authors, raw_genre
 
-    # Supports JSON list syntax: FILES='["a.csv", "b.csv"]'
+    if not book.title or not book.title.strip():
+        return raw_authors, raw_genre if raw_genre else None
+
     try:
-        parsed = json.loads(value)
-        if isinstance(parsed, list):
-            return [str(v).strip() for v in parsed if str(v).strip()]
-    except json.JSONDecodeError:
-        pass
-
-    # Supports comma-separated syntax: FILES='a.csv,b.csv'
-    return [part.strip() for part in value.split(",") if part.strip()]
-
-
-def _get_dataset_and_files() -> tuple[str, List[str]]:
-    dataset = os.getenv("DATASET", "").strip().strip('"').strip("'")
-    files = _parse_files_env(os.getenv("FILES"))
-    return dataset, files
-
-
-
-
-def _load_dataset_file(dataset: str, file_name: str) -> pd.DataFrame:
-    required_cols = ["Id", "Name", "Authors", "pagesNumber", "PublishYear", "Rating", "RatingDistTotal"]
-
-    def _canon(col_name: str) -> str:
-        return "".join(ch for ch in str(col_name).lower() if ch.isalnum())
-
-    expected_by_canon = {
-        _canon("Id"): "Id",
-        _canon("Name"): "Name",
-        _canon("Authors"): "Authors",
-        _canon("pagesNumber"): "pagesNumber",
-        _canon("PublishYear"): "PublishYear",
-        _canon("Rating"): "Rating",
-        _canon("RatingDistTotal"): "RatingDistTotal",
-    }
-
-    @lru_cache(maxsize=8)
-    def _dataset_dir(ds: str) -> Path:
-        return Path(kagglehub.dataset_download(ds))
-
-    def _read_csv_with_fallbacks(source, source_label: str) -> pd.DataFrame:
-        last_exc = None
-        for encoding in ("utf-8", "utf-8-sig", "cp1252", "latin1"):
-            read_strategies = [
-                {"encoding": encoding, "sep": None, "engine": "python"},
-                {
-                    "encoding": encoding,
-                    "sep": None,
-                    "engine": "python",
-                    "on_bad_lines": "skip",
-                },
-                {
-                    "encoding": encoding,
-                    "sep": ",",
-                    "engine": "python",
-                    "quoting": csv.QUOTE_NONE,
-                    "on_bad_lines": "skip",
-                    "escapechar": "\\",
-                },
-            ]
-
-            for pandas_kwargs in read_strategies:
-                try:
-                    if isinstance(source, (bytes, bytearray)):
-                        df = pd.read_csv(io.BytesIO(source), **pandas_kwargs)
-                    else:
-                        df = pd.read_csv(source, **pandas_kwargs)
-                except Exception as exc:
-                    last_exc = exc
-                    continue
-
-                rename_map = {}
-                for original_col in df.columns:
-                    canonical = _canon(str(original_col).replace("\ufeff", "").strip())
-                    if canonical in expected_by_canon:
-                        rename_map[original_col] = expected_by_canon[canonical]
-
-                if rename_map:
-                    df = df.rename(columns=rename_map)
-
-                missing = [col for col in required_cols if col not in df.columns]
-                if missing:
-                    last_exc = ValueError(
-                        f"Missing expected columns {missing} in '{source_label}'. "
-                        f"Detected columns: {list(df.columns)}"
-                    )
-                    continue
-
-                return df[required_cols]
-
-        raise ValueError(
-            f"Could not parse dataset file '{source_label}'. Last error: {last_exc}"
+        payload = _request_json(
+            "/search.json",
+            {
+                "title": book.title.strip(),
+                "limit": 1,
+                "language": "eng",
+                "fields": "title,author_name,subject",
+            },
         )
+    except RuntimeError:
+        return raw_authors, raw_genre if raw_genre else None
+    docs = payload.get("docs")
+    if not isinstance(docs, list) or not docs:
+        return raw_authors, raw_genre if raw_genre else None
 
-    ds_dir = _dataset_dir(dataset)
-    direct_matches = list(ds_dir.rglob(file_name))
-    if direct_matches:
-        matched_path = direct_matches[0]
-        if matched_path.suffix.lower() == ".zip":
-            with zipfile.ZipFile(matched_path, "r") as zf:
-                member = next((n for n in zf.namelist() if n.endswith(file_name)), None)
-                if member is None:
-                    member = next((n for n in zf.namelist() if n.lower().endswith(".csv")), None)
-                if member is None:
-                    raise ValueError(f"Zip file '{matched_path.name}' contains no CSV files")
-                return _read_csv_with_fallbacks(zf.read(member), f"{matched_path.name}:{member}")
-        return _read_csv_with_fallbacks(matched_path, matched_path.name)
+    doc = docs[0]
+    authors = list(raw_authors)
+    if not authors and isinstance(doc.get("author_name"), list):
+        authors = [name for name in doc["author_name"] if isinstance(name, str) and name.strip()]
 
-    zip_candidates = list(ds_dir.rglob("*.zip"))
-    for zip_path in zip_candidates:
-        with zipfile.ZipFile(zip_path, "r") as zf:
-            member = next((n for n in zf.namelist() if n.endswith(file_name)), None)
-            if member is not None:
-                return _read_csv_with_fallbacks(zf.read(member), f"{zip_path.name}:{member}")
+    genre = raw_genre if raw_genre and raw_genre != "UNKNOWN" else None
+    if genre is None and isinstance(doc.get("subject"), list):
+        for subject in doc["subject"]:
+            if not isinstance(subject, str):
+                continue
+            mapped = _subject_to_genre(subject)
+            if mapped:
+                genre = mapped
+                break
 
-    raise ValueError(f"Could not find '{file_name}' in downloaded dataset at '{ds_dir}'")
-
+    return authors, genre
 
 
-
-def getData():
-    dataset, files = _get_dataset_and_files()
-
-    if not dataset:
-        raise ValueError("Missing DATASET env var. Set DATASET before calling getData().")
-    if not files:
-        raise ValueError(
-            "Missing/invalid FILES env var. Use comma-separated values or a JSON list, e.g. FILES='books.csv,ratings.csv'"
-        )
-
-    dfs = [_load_dataset_file(dataset, f) for f in files]
-
-    df = pd.concat(dfs, ignore_index=True)
-    return df
+def _extract_authors_from_work(work: dict[str, Any]) -> List[str]:
+    names: List[str] = []
+    if isinstance(work.get("authors"), list):
+        for author in work["authors"]:
+            name = author.get("name") if isinstance(author, dict) else None
+            if name:
+                names.append(name)
+    if not names and isinstance(work.get("author_name"), list):
+        for name in work["author_name"]:
+            if isinstance(name, str):
+                names.append(name)
+    return names
 
 
+def _extract_primary_author_key(work: dict[str, Any]) -> Optional[str]:
+    authors = work.get("authors")
+    if isinstance(authors, list) and authors:
+        first = authors[0]
+        if isinstance(first, dict):
+            key = first.get("key")
+            if isinstance(key, str) and key.startswith("/authors/"):
+                return key.split("/")[-1]
+    return None
 
-def make_recommendations(owned_books: List[Book] | Book, k: int, df: pd.DataFrame) -> List[Recommandation]:
-    """
-    Make recommendations based on user-owned books.
-    Parameters:
-        owned_books: List of Book objects or a single Book
-        k: number of recommendations
-        df: the dataset DataFrame to use for recommendations
-    Returns:
-        List of Recommandation objects
-    """
+
+def _candidate_from_work(work: dict[str, Any]) -> Optional[Candidate]:
+    title = work.get("title")
+    if not isinstance(title, str) or not title.strip():
+        return None
+    work_key = work.get("key")
+    authors = _extract_authors_from_work(work)
+    primary_author = authors[0] if authors else ""
+    if not isinstance(work_key, str) or not work_key.strip():
+        work_key = f"title-author:{_normalize_text(title)}|{_normalize_text(primary_author)}"
+
+    year = work.get("first_publish_year")
+    publication_year = int(year) if isinstance(year, int) else None
+    edition_count = work.get("edition_count")
+    edition_count_int = int(edition_count) if isinstance(edition_count, int) else 0
+
+    return Candidate(
+        key=work_key,
+        title=title.strip(),
+        authors=authors,
+        publication_year=publication_year,
+        edition_count=max(0, edition_count_int),
+    )
+
+
+def _candidate_identity(title: str, authors: List[str]) -> str:
+    primary_author = authors[0] if authors else ""
+    return f"{_normalize_text(title)}|{_normalize_text(primary_author)}"
+
+
+def _make_user_profile(owned_books: List[Book]) -> UserProfile:
+    genre_counter: Counter[str] = Counter()
+    author_counter: Counter[str] = Counter()
+    owned_keys: set[str] = set()
+    owned_author_set: set[str] = set()
+
+    for book in owned_books:
+        authors, genre = _enrich_owned_book(book)
+        if genre:
+            genre_norm = str(genre).strip().upper()
+            if genre_norm and genre_norm != "UNKNOWN":
+                genre_counter[genre_norm] += 1
+
+        for author in authors:
+            author_norm = _normalize_text(author)
+            if author_norm:
+                author_counter[author_norm] += 1
+                owned_author_set.add(author_norm)
+
+        if book.title:
+            owned_keys.add(_candidate_identity(book.title, authors))
+
+    return UserProfile(
+        genre_counter=genre_counter,
+        author_counter=author_counter,
+        owned_keys=owned_keys,
+        owned_author_set=owned_author_set,
+    )
+
+
+def _search_author_olid(author_name_normalized: str) -> Optional[str]:
+    payload = _request_json("/search/authors.json", {"q": author_name_normalized, "limit": 5})
+    docs = payload.get("docs")
+    if not isinstance(docs, list):
+        return None
+    if not docs:
+        return None
+    key = docs[0].get("key")
+    if isinstance(key, str) and key.startswith("/authors/"):
+        return key.split("/")[-1]
+    return None
+
+
+def _fetch_subject_candidates(subject_slug: str) -> List[Candidate]:
+    payload = _request_json(f"/subjects/{subject_slug}.json", {"details": "false", "limit": SUBJECT_LIMIT})
+    works = payload.get("works")
+    if not isinstance(works, list):
+        return []
+    out: List[Candidate] = []
+    for work in works:
+        if not isinstance(work, dict):
+            continue
+        candidate = _candidate_from_work(work)
+        if candidate is None:
+            continue
+        out.append(candidate)
+    return out
+
+
+def _fetch_author_candidates(olid: str) -> List[Candidate]:
+    payload = _request_json(f"/authors/{olid}/works.json", {"limit": AUTHOR_WORKS_LIMIT})
+    entries = payload.get("entries")
+    if not isinstance(entries, list):
+        return []
+    out: List[Candidate] = []
+    for work in entries:
+        if not isinstance(work, dict):
+            continue
+        candidate = _candidate_from_work(work)
+        if candidate is None:
+            continue
+        out.append(candidate)
+    return out
+
+
+def _collect_candidates(profile: UserProfile) -> Dict[str, Candidate]:
+    candidates: Dict[str, Candidate] = {}
+
+    for genre, _freq in profile.genre_counter.most_common(MAX_GENRES):
+        subject_slug = GENRE_TO_SUBJECT.get(genre)
+        if not subject_slug:
+            continue
+        for candidate in _fetch_subject_candidates(subject_slug):
+            existing = candidates.get(candidate.key)
+            if existing is None:
+                candidate.source_genres.add(genre)
+                candidates[candidate.key] = candidate
+            else:
+                existing.source_genres.add(genre)
+
+    for author_norm, _freq in profile.author_counter.most_common(MAX_AUTHORS):
+        olid = _search_author_olid(author_norm)
+        if not olid:
+            continue
+        for candidate in _fetch_author_candidates(olid):
+            existing = candidates.get(candidate.key)
+            if existing is None:
+                candidate.source_authors.add(author_norm)
+                candidates[candidate.key] = candidate
+            else:
+                existing.source_authors.add(author_norm)
+
+    # Fallback: if user profile is too sparse or enrichment misses, keep UX alive.
+    if not candidates:
+        for candidate in _fetch_subject_candidates("fiction"):
+            if candidate.key not in candidates:
+                candidate.source_genres.add("FICTION")
+                candidates[candidate.key] = candidate
+
+    return candidates
+
+
+def _compute_score(candidate: Candidate, profile: UserProfile) -> float:
+    genre_total = sum(profile.genre_counter.values()) or 1
+    genre_score = (
+        sum(profile.genre_counter.get(genre, 0) for genre in candidate.source_genres) / genre_total
+        if candidate.source_genres
+        else 0.0
+    )
+
+    cand_authors = {_normalize_text(author) for author in candidate.authors if author}
+    author_score = 1.0 if cand_authors.intersection(profile.owned_author_set) else 0.0
+
+    popularity_score = min(1.0, (candidate.edition_count ** 0.5) / 20.0)
+    current_year = datetime.now(timezone.utc).year
+    recency_score = 0.0
+    if candidate.publication_year:
+        age = max(0, current_year - candidate.publication_year)
+        recency_score = max(0.0, 1.0 - (age / 100.0))
+
+    return (
+        0.60 * genre_score
+        + 0.30 * author_score
+        + 0.07 * popularity_score
+        + 0.03 * recency_score
+    )
+
+
+def make_recommendations(owned_books: List[Book] | Book, k: int, _unused_df: Any = None) -> List[Recommandation]:
     if isinstance(owned_books, Book):
         owned_books = [owned_books]
-
     if not owned_books:
         return []
 
-    catalog_df = ensure_recommender(df)
+    profile = _make_user_profile(owned_books)
+    candidates = _collect_candidates(profile)
 
-    # Convert Book models into single-row DataFrames
-    book_dfs = []
-    for book in owned_books:
-        match = _match_owned_book_row(catalog_df, book)
-        if match.empty:
+    scored: List[tuple[Candidate, float]] = []
+    for candidate in candidates.values():
+        identity = _candidate_identity(candidate.title, candidate.authors)
+        if identity in profile.owned_keys:
             continue
-        book_dfs.append(match.iloc[[0]])
+        score = _compute_score(candidate, profile)
+        scored.append((candidate, score))
 
-    if not book_dfs:
-        # None of the user's books were found in the dataset
-        return []
+    scored.sort(key=lambda item: item[1], reverse=True)
 
-    # Call the recommendation engine
-    raw_results = recommend_from_books(book_dfs, k)
-
-    recommendations: List[Recommandation] = []
-
-    for row, score in raw_results:
-        book_model = Book(
-            id=int(row["Id"]),
-            title=row["Name"],
-            authors=[row["Authors"]] if "Authors" in row else None,
-            publicationYear=int(row["PublishYear"]) if "PublishYear" in row else None,
+    out: List[Recommandation] = []
+    for candidate, score in scored[: max(1, k)]:
+        out.append(
+            Recommandation(
+                book=Book(
+                    id=None,
+                    isbn=None,
+                    title=candidate.title,
+                    authors=candidate.authors or None,
+                    publisher=None,
+                    publicationYear=candidate.publication_year,
+                    genre=None,
+                ),
+                score=round(float(score), 6),
+            )
         )
-        recommendations.append(Recommandation(book=book_model, score=score))
-
-    return recommendations
-
-#Should return like this: class Recommandation(BaseModel):
-    #book: Book
-    #score: float
-
-
-
-
+    return out

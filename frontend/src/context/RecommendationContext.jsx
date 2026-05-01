@@ -2,42 +2,77 @@ import { createContext, useCallback, useContext, useMemo, useState } from "react
 
 const RecommendationsContext = createContext(null);
 
-const MOCK_RECOMMENDATIONS = [
-  { book_name: "Clean Code", score: 0.98 },
-  { book_name: "The Pragmatic Programmer", score: 0.95 },
-  { book_name: "Refactoring", score: 0.93 },
-  { book_name: "Design Patterns", score: 0.91 },
-  { book_name: "Domain-Driven Design", score: 0.89 },
-  { book_name: "Effective Java", score: 0.87 },
-  { book_name: "You Don’t Know JS", score: 0.85 },
-  { book_name: "Code Complete", score: 0.84 },
-  { book_name: "Head First Design Patterns", score: 0.82 },
-  { book_name: "Working Effectively with Legacy Code", score: 0.80 },
-];
+async function readError(res) {
+  try {
+    const data = await res.json();
+    return data?.detail || data?.message || `Request failed (${res.status})`;
+  } catch {
+    return `Request failed (${res.status})`;
+  }
+}
+
+function normalizeOwnedBooks(ownedBooks = []) {
+  return ownedBooks
+    .map((item) => item?.book ?? item)
+    .map((book) => {
+      const publicationYearRaw = book?.publicationYear ?? book?.year;
+      const publicationYear = Number.isFinite(Number(publicationYearRaw))
+        ? Number(publicationYearRaw)
+        : null;
+
+      const authors = Array.isArray(book?.authors)
+        ? book.authors
+        : book?.author
+          ? [book.author]
+          : [];
+
+      return {
+        id: Number.isFinite(Number(book?.id)) ? Number(book.id) : null,
+        isbn: book?.isbn ?? null,
+        title: book?.title ?? null,
+        authors,
+        publisher: book?.publisher ?? null,
+        publicationYear,
+        genre: book?.genre ?? null,
+      };
+    })
+    .filter((book) => typeof book.title === "string" && book.title.trim().length > 0);
+}
 
 export function RecommendationsProvider({ children }) {
   const [recommendations, setRecommendations] = useState([]);
   const [loadingRecommendations, setLoadingRecommendations] = useState(false);
   const [recommendationsError, setRecommendationsError] = useState("");
 
-  const fetchRecommendations = useCallback(async (ownedBookIds = [], k = 10) => {
+  const fetchRecommendations = useCallback(async (ownedBooks = [], k = 10) => {
     setLoadingRecommendations(true);
     setRecommendationsError("");
 
     try {
-      // MOCK for now:
-      await new Promise((r) => setTimeout(r, 200));
-      setRecommendations(MOCK_RECOMMENDATIONS.slice(0, k));
+      const normalizedOwnedBooks = normalizeOwnedBooks(ownedBooks);
+      if (!normalizedOwnedBooks.length) {
+        setRecommendations([]);
+        return;
+      }
 
-      // TODO: enable later
-      // const res = await fetch("http://127.0.0.1:8000/recommend", {
-      //   method: "POST",
-      //   headers: { "Content-Type": "application/json" },
-      //   body: JSON.stringify({ owned_book_ids: ownedBookIds, k }),
-      // });
-      // if (!res.ok) throw new Error("Failed to fetch recommendations");
-      // const data = await res.json();
-      // setRecommendations((data.recommendations ?? []).slice(0, k));
+      const res = await fetch("/recommend", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ owned_books: normalizedOwnedBooks, k }),
+      });
+
+      if (!res.ok) {
+        throw new Error(await readError(res));
+      }
+
+      const data = await res.json();
+      const parsedRecommendations = (data?.recommendations ?? []).map((rec) => ({
+        book_name: rec?.book?.title ?? rec?.book_name ?? "Unknown title",
+        score: Number(rec?.score ?? 0),
+        book: rec?.book ?? null,
+      }));
+
+      setRecommendations(parsedRecommendations.slice(0, k));
     } catch (err) {
       setRecommendations([]);
       setRecommendationsError(err.message || "Could not load recommendations");
