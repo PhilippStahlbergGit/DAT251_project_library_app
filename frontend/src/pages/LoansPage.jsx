@@ -4,12 +4,13 @@ import { useLoans } from "../context/LoanContext";
 import "./LoansPage.css";
 
 export default function LoansPage() {
-  const { loans, loading, error, fetchLoans, returnLoan, deleteLoan } = useLoans();
+  const { loans, lentLoans, loading, error, fetchLoans, fetchLentLoans, returnLoan, deleteLoan } = useLoans();
   const [actionError, setActionError] = useState("");
 
   useEffect(() => {
     fetchLoans();
-  }, [fetchLoans]);
+    fetchLentLoans();
+  }, [fetchLoans, fetchLentLoans]);
 
   const handleReturn = async (id) => {
     setActionError("");
@@ -32,20 +33,49 @@ export default function LoansPage() {
 
   const activeLoans = loans.filter((l) => l.loanStatus === "ACTIVE");
   const pastLoans = loans.filter((l) => l.loanStatus !== "ACTIVE");
+  const activeLentLoans = lentLoans.filter((l) => l.loanStatus === "ACTIVE" && l.guestBorrowerName);
 
   return (
     <section className="loans-page">
-      <h1>Borrowed Books</h1>
+      <h1>Loans</h1>
       <p className="loans-lead">
-        Books you have borrowed from other users. To lend one of your own books,
+        Track books you have borrowed and books you have lent out. To lend a book,
         go to <Link to="/books">My Library</Link>.
       </p>
 
       {actionError && <p className="loan-error loan-action-error">{actionError}</p>}
 
+      {/* Lent out by me */}
+      {activeLentLoans.length > 0 && (
+        <div className="loan-section">
+          <h2>Lent Out</h2>
+          <ul className="loans-list">
+            {activeLentLoans.map((loan) => (
+              <li key={loan.id} className="loan-item loan-active">
+                <div className="loan-info">
+                  <strong className="loan-title">{loan.bookCopy?.book?.title ?? "Unknown book"}</strong>
+                  <span className="loan-meta">
+                    Lent to {loan.guestBorrowerName ?? loan.borrower?.name ?? "Unknown"} · Due {loan.dueDate}
+                  </span>
+                </div>
+                <div className="loan-actions">
+                  <span className="loan-badge loan-badge--active">Active</span>
+                  <button className="loan-btn loan-btn--return" onClick={() => handleReturn(loan.id)}>
+                    Return
+                  </button>
+                  <button className="loan-btn loan-btn--delete" onClick={() => handleDelete(loan.id)}>
+                    Delete
+                  </button>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       {/* Active loans */}
       <div className="loan-section">
-        <h2>Active</h2>
+        <h2>Borrowed</h2>
         {loading && <p>Loading…</p>}
         {error && <p className="loan-error">{error}</p>}
         {!loading && !error && activeLoans.length === 0 && (

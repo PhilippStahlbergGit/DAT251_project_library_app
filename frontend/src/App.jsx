@@ -7,6 +7,7 @@ import RegisterPage from './pages/Auth/RegisterPage'
 import BooksPage from './pages/BooksPage'
 import LoansPage from './pages/LoansPage'
 import AboutPage from './pages/AboutPage'
+import QuizPage from './pages/QuizPage'
 
 function App() {
   const { isAuthenticated } = useAuth();
@@ -18,6 +19,7 @@ function App() {
         <Route path="/books" element={<BooksPage />} />
         <Route path="/about" element={<AboutPage />} />
         <Route path="/loans" element={isAuthenticated ? <LoansPage /> : <Navigate to="/login" replace />} />
+        <Route path="/quiz" element={isAuthenticated ? <QuizPage /> : <Navigate to="/login" replace />} />
         <Route path="/login" element={isAuthenticated ? <Navigate to="/" replace /> : <LoginPage />} />
         <Route path="/register" element={isAuthenticated ? <Navigate to="/" replace /> : <RegisterPage />} />
         <Route path="*" element={<Navigate to="/" replace />} />

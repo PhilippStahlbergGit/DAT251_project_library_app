@@ -3,7 +3,6 @@ package app.main.LibraryApp.controller;
 import java.util.List;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -18,6 +17,7 @@ import app.main.LibraryApp.domain.BookCopy;
 import app.main.LibraryApp.domain.dto.BookRequest;
 import app.main.LibraryApp.domain.dto.BookSuggestion;
 import app.main.LibraryApp.service.BookService;
+import app.main.LibraryApp.util.SecurityUtils;
 
 @RestController
 @RequestMapping("/api/books")
@@ -39,19 +39,19 @@ public class BookController {
 
     @PostMapping
     public ResponseEntity<BookCopy> addBook(@RequestBody BookRequest book) {
-        BookCopy addedCopy = bookService.addBook(book, getCurrentUserEmail());
+        BookCopy addedCopy = bookService.addBook(book, SecurityUtils.getCurrentUserEmail());
         return ResponseEntity.status(201).body(addedCopy);
     }
 
     @GetMapping
     public ResponseEntity<List<BookCopy>> getAllBooks() {
-        return ResponseEntity.ok(bookService.getAllBooks(getCurrentUserEmail()));
+        return ResponseEntity.ok(bookService.getAllBooks(SecurityUtils.getCurrentUserEmail()));
     }
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteBook(@PathVariable Long id) {
         try {
-            bookService.deleteBook(getCurrentUserEmail(), id);
+            bookService.deleteBook(SecurityUtils.getCurrentUserEmail(), id);
             return ResponseEntity.ok("Book deleted");
         } catch (RuntimeException e) {
             if (e.getMessage().equals("Book not found")) {
@@ -64,7 +64,4 @@ public class BookController {
         }
     }
 
-    private String getCurrentUserEmail() {
-        return SecurityContextHolder.getContext().getAuthentication().getName();
-    }
 }

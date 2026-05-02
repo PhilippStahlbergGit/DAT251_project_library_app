@@ -33,6 +33,7 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/api/auth/logout").authenticated() // require auth for logout
                         .requestMatchers("/api/auth/**").permitAll() // other auth endpoints are public
+                        .requestMatchers("/ocr/**").permitAll() // allow OCR endpoints without auth
                         .anyRequest().authenticated() // everything else requires auth
                 )
                 .sessionManagement(session -> session

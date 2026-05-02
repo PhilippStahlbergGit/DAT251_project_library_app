@@ -1,0 +1,6 @@
+flask
+easyocr
+opencv-python-headless
+numpy
+torch
+torchvision

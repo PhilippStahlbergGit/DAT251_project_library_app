@@ -241,3 +241,176 @@
     animation: none;
   }
 }
+
+.add-book-row {
+  display: flex;
+  gap: 1.5rem;
+  align-items: flex-start;
+  margin: 1.5rem 0;
+}
+
+.add-book-row .add-book-card {
+  flex: 1;
+  margin: 0;
+}
+
+.ocr-description {
+  font-size: 0.85rem;
+  color: #5b4a3b;
+  margin: 0 0 0.75rem;
+}
+
+.ocr-upload-label {
+  display: flex;
+  width: 100%;
+  cursor: pointer;
+}
+
+.ocr-upload-placeholder {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  border: 2px dashed #cbb89a;
+  border-radius: 8px;
+  padding: 0.6rem 0.85rem;
+  color: #7a6352;
+  font-size: 0.9rem;
+  background: #fffaf2;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.ocr-upload-placeholder:hover {
+  border-color: #8a5a3b;
+}
+
+.ocr-upload-placeholder span:first-child {
+  font-size: 1.1rem;
+}
+
+.ocr-preview {
+  width: 100%;
+  max-height: 180px;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid #cbb89a;
+  margin-bottom: 0.75rem;
+}
+
+.ocr-file-input {
+  display: none;
+}
+
+.ocr-results {
+  margin-top: 0.75rem;
+  background: #f0e8d8;
+  border: 1px solid #c4a87a;
+  border-radius: 8px;
+  padding: 0.65rem 0.85rem;
+}
+
+.ocr-results-label {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #5b4a3b;
+  margin: 0 0 0.4rem;
+}
+
+.ocr-results ul {
+  margin: 0;
+  padding-left: 1.25rem;
+}
+
+.ocr-results li {
+  font-size: 0.875rem;
+  color: #2a1f17;
+  padding: 0.15rem 0;
+}
+
+@media (max-width: 700px) {
+  .add-book-row {
+    flex-direction: column;
+  }
+}
+
+.ocr-result-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.4rem 0;
+  border-bottom: 1px solid #e8dcc8;
+}
+
+.ocr-result-item:last-child {
+  border-bottom: none;
+}
+
+.ocr-result-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.1rem;
+}
+
+.ocr-result-info strong {
+  font-size: 0.9rem;
+  color: #2a1f17;
+}
+
+.ocr-result-info span {
+  font-size: 0.8rem;
+  color: #7a6352;
+}
+
+.ocr-add-btn {
+  background: #6d4630;
+  color: #f6ead5;
+  border: none;
+  border-radius: 6px;
+  padding: 0.3rem 0.7rem;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+
+.ocr-add-btn:hover:not(:disabled) {
+  background: #5a3a29;
+}
+
+.ocr-add-btn:disabled {
+  background: #2d6a3f;
+  cursor: not-allowed;
+}
+
+.ocr-spinner-row {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+
+.ocr-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  border: 2px solid #f6ead5;
+  border-top-color: transparent;
+  border-radius: 50%;
+  animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.ocr-change-hint {
+  margin-left: auto;
+  flex-shrink: 0;
+  font-size: 0.9rem;
+  color: #9a7a5a;
+  font-style: italic;
+}

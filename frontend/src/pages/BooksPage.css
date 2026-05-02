@@ -121,6 +121,21 @@
   color: #fff7ea;
 }
 
+/* Lend mode toggle */
+.lend-mode-toggle {
+  display: flex;
+  gap: 1rem;
+  font-size: 0.85rem;
+  color: var(--ink);
+}
+
+.lend-mode-toggle label {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+  cursor: pointer;
+}
+
 /* Inline lend form */
 .lend-form {
   display: flex;
