@@ -1,4 +1,4 @@
-﻿annotated-doc==0.0.4
+annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.12.1
 certifi==2026.2.25
@@ -28,7 +28,7 @@ requests==2.32.5
 scikit-learn==1.8.0
 scipy==1.17.1
 six==1.17.0
-starlette==0.52.1
+starlette==1.0.0
 threadpoolctl==3.6.0
 tqdm==4.67.3
 typing-inspection==0.4.2
