@@ -1,4 +1,4 @@
-﻿annotated-doc==0.0.4
+annotated-doc==0.0.4
 annotated-types==0.7.0
 anyio==4.12.1
 certifi==2026.2.25
@@ -13,7 +13,7 @@ httpx==0.28.1
 idna==3.11
 iniconfig==2.3.0
 joblib==1.5.3
-numpy==2.4.2
+numpy==2.4.6
 packaging==26.0
 pandas==3.0.1
 pluggy==1.6.0
