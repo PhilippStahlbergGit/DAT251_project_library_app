@@ -15,7 +15,7 @@ iniconfig==2.3.0
 joblib==1.5.3
 numpy==2.4.6
 packaging==26.2
-pandas==3.0.1
+pandas==3.0.3
 pluggy==1.6.0
 protobuf==6.33.5
 pydantic==2.12.5
