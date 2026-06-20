@@ -1,3 +1,7 @@
+# Status
+This project will soon be under development again ...
+
+
 # Branching rules
 * __production__:
   The production ready branch, fixes and new versions should be properly explained and made clear.
